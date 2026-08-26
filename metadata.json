@@ -1,0 +1,6 @@
+{
+  "name": "Candidate Intelligence & HR Decision Platform",
+  "description": "Production-grade AI-powered candidate intelligence platform with multi-agent orchestration, evidence verification, HR copilot, live interview intelligence, side-by-side comparison matrix, entity knowledge graph, and AI observability.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
