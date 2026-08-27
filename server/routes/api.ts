@@ -15,13 +15,24 @@ import { generateCopilotResponse, analyzeResumeWithAgents, indexCandidateInRAG }
 import { 
   requireAuth, 
   requireRole, 
-  generateToken, 
+  generateToken,
+  revokeToken,
   AuthenticatedRequest 
 } from '../middleware/auth';
+import {
+  authRateLimiter,
+  aiCopilotRateLimiter,
+  uploadRateLimiter
+} from '../middleware/rateLimit';
+import { validateExternalUrl } from '../services/urlValidator';
 import { 
   analyzeCandidateTimeline, 
   calculateExplainableMatch, 
-  auditExternalSources 
+  auditExternalSources,
+  detectDuplicateCandidates,
+  analyzeInterviewFeedback,
+  calculateHRPipelineAnalytics,
+  SKILL_SEMANTIC_ONTOLOGY,
 } from '../services/analysisEngine';
 import { parseDocumentBuffer } from '../services/documentParser';
 import { ragStore, isPromptInjectionDetected } from '../services/ragEngine';
@@ -41,14 +52,23 @@ export const apiRouter = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Reject dangerous executable extensions
+    const dangerousExts = ['.exe', '.sh', '.bat', '.cmd', '.bin', '.js', '.vbs', '.py', '.php', '.dll', '.jar'];
+    const lowerName = file.originalname.toLowerCase();
+    if (dangerousExts.some(ext => lowerName.endsWith(ext))) {
+      return cb(new Error('Dangerous file format rejected. Only .pdf, .docx, .txt, and .md files are permitted.'));
+    }
+    cb(null, true);
+  },
 });
 
 // ==========================================
 // 1. AUTHENTICATION & SESSIONS
 // ==========================================
 
-// POST /api/auth/login
-apiRouter.post('/auth/login', (req, res) => {
+// POST /api/auth/login (Protected by auth rate limiter)
+apiRouter.post('/auth/login', authRateLimiter, (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -86,12 +106,16 @@ apiRouter.post('/auth/login', (req, res) => {
   }
 });
 
-// POST /api/auth/register
-apiRouter.post('/auth/register', (req, res) => {
+// POST /api/auth/register (Protected by auth rate limiter)
+apiRouter.post('/auth/register', authRateLimiter, (req, res) => {
   try {
     const { email, password, name, role, orgId } = req.body;
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required.' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
     }
 
     if (db.getUserByEmail(email)) {
@@ -135,8 +159,11 @@ apiRouter.get('/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
   res.json({ user: safeUser });
 });
 
-// POST /api/auth/logout
+// POST /api/auth/logout (Revokes token and logs audit event)
 apiRouter.post('/auth/logout', requireAuth, (req: AuthenticatedRequest, res) => {
+  if (req.rawToken) {
+    revokeToken(req.rawToken);
+  }
   if (req.user) {
     db.addAuditLog({
       userId: req.user.id,
@@ -146,7 +173,7 @@ apiRouter.post('/auth/logout', requireAuth, (req: AuthenticatedRequest, res) => 
       action: 'USER_LOGOUT',
       entityType: 'auth',
       entityId: req.user.id,
-      details: `User ${req.user.name} logged out.`,
+      details: `User ${req.user.name} logged out and session token invalidated.`,
     });
   }
   res.json({ success: true, message: 'Logged out successfully.' });
@@ -189,27 +216,79 @@ apiRouter.get('/jobs/:id', requireAuth, (req: AuthenticatedRequest, res) => {
   res.json({ job });
 });
 
-// POST / PUT Job
-apiRouter.post('/jobs', requireAuth, requireRole(['Admin', 'HR', 'Recruiter', 'Hiring Manager']), (req: AuthenticatedRequest, res) => {
-  const newJob: JobProfile = req.body;
-  if (!newJob.title || !newJob.department) {
-    return res.status(400).json({ error: 'Job title and department are required.' });
+// POST /api/jobs/parse-description (AI/Heuristic Requirement Extraction)
+apiRouter.post('/jobs/parse-description', requireAuth, (req: AuthenticatedRequest, res) => {
+  const { title, description } = req.body;
+  if (!description || typeof description !== 'string') {
+    return res.status(400).json({ error: 'Job description text is required for parsing.' });
   }
 
-  const saved = db.saveJob(newJob, req.orgId || 'org-talentintel-enterprise');
+  const descLower = description.toLowerCase();
+  const foundSkills: string[] = [];
+
+  // Match against known semantic ontology and engineering tools
+  Object.keys(SKILL_SEMANTIC_ONTOLOGY).forEach(skillKey => {
+    const entry = SKILL_SEMANTIC_ONTOLOGY[skillKey];
+    if (
+      descLower.includes(skillKey) ||
+      entry.synonyms.some(s => descLower.includes(s.toLowerCase()))
+    ) {
+      foundSkills.push(skillKey.charAt(0).toUpperCase() + skillKey.slice(1));
+    }
+  });
+
+  // Extract experience min/max
+  const expMatch = description.match(/(\d+)\+?\s*(?:-\s*(\d+))?\s*years?/i);
+  const minExp = expMatch ? parseInt(expMatch[1], 10) : 3;
+  const maxExp = expMatch && expMatch[2] ? parseInt(expMatch[2], 10) : minExp + 3;
+
+  // Split into required, preferred, optional
+  const requiredSkills = foundSkills.slice(0, 5);
+  const preferredSkills = foundSkills.slice(5, 8);
+  const optionalSkills = foundSkills.slice(8, 12);
+
+  // Extract responsibilities
+  const lines = description.split('\n').map(l => l.trim().replace(/^[-*•]\s*/, '')).filter(l => l.length > 20);
+  const responsibilities = lines.slice(0, 5);
+
+  const parsed = {
+    title: title || 'Parsed Engineering Role',
+    experienceMin: minExp,
+    experienceMax: maxExp,
+    requiredSkills: requiredSkills.length > 0 ? requiredSkills : ['Python', 'System Architecture', 'Problem Solving'],
+    preferredSkills: preferredSkills.length > 0 ? preferredSkills : ['Cloud Infrastructure', 'CI/CD'],
+    optionalSkills: optionalSkills.length > 0 ? optionalSkills : ['Docker', 'Monitoring'],
+    responsibilities: responsibilities.length > 0 ? responsibilities : [
+      'Lead design and technical execution of core platform modules.',
+      'Collaborate with cross-functional product and infrastructure teams.',
+      'Maintain 99.99% system reliability and code quality standards.'
+    ],
+    educationRequirements: ['B.S. or M.S. in Computer Science or equivalent practical industry experience.'],
+    certifications: [],
+  };
+
+  res.json({ parsed });
+});
+
+// DELETE Job
+apiRouter.delete('/jobs/:id', requireAuth, requireRole(['Admin', 'HR']), (req: AuthenticatedRequest, res) => {
+  const deleted = db.deleteJob(req.params.id, req.orgId || 'org-talentintel-enterprise');
+  if (!deleted) {
+    return res.status(404).json({ error: 'Job requisition not found or could not be deleted.' });
+  }
 
   db.addAuditLog({
     userId: req.user!.id,
     userEmail: req.user!.email,
     userName: req.user!.name,
     orgId: req.orgId!,
-    action: 'JOB_UPDATED',
+    action: 'JOB_DELETED',
     entityType: 'job',
-    entityId: saved.id,
-    details: `Job profile '${saved.title}' saved/updated with calibrated weightings.`,
+    entityId: req.params.id,
+    details: `Deleted job profile requisition ID ${req.params.id}.`,
   });
 
-  res.json({ job: saved });
+  res.json({ success: true, message: 'Job requisition deleted successfully.' });
 });
 
 // ==========================================
@@ -1087,3 +1166,298 @@ apiRouter.post('/compare', requireAuth, (req: AuthenticatedRequest, res) => {
     recommendedPick: bestCandidate.id,
   });
 });
+
+// POST /api/compare-detailed (Phase 4 Side-by-Side 2-4 Candidates Matrix)
+apiRouter.post('/compare-detailed', requireAuth, (req: AuthenticatedRequest, res) => {
+  const { candidateIds, jobId } = req.body;
+  if (!Array.isArray(candidateIds) || candidateIds.length < 2 || candidateIds.length > 4) {
+    return res.status(400).json({ error: 'Please select between 2 and 4 candidates to compare.' });
+  }
+
+  const allCands = db.getCandidates(req.orgId || 'org-talentintel-enterprise');
+  const selectedCands = allCands.filter(c => candidateIds.includes(c.id));
+  if (selectedCands.length === 0) {
+    return res.status(404).json({ error: 'No matching candidates found.' });
+  }
+
+  const job = db.getJobById(jobId, req.orgId || 'org-talentintel-enterprise') || db.getJobs(req.orgId || 'org-talentintel-enterprise')[0];
+
+  // Evaluate each candidate vs target job
+  const candidateEvaluations = selectedCands.map(cand => {
+    const explainable = calculateExplainableMatch(cand, job);
+    return {
+      candidate: cand,
+      explainable,
+    };
+  });
+
+  // Best skill fit winner
+  const bestSkillFit = [...candidateEvaluations].sort(
+    (a, b) => b.explainable.requiredSkillsMatch - a.explainable.requiredSkillsMatch
+  )[0];
+
+  // Best experience fit winner
+  const bestExpFit = [...candidateEvaluations].sort(
+    (a, b) => b.explainable.experienceScore - a.explainable.experienceScore
+  )[0];
+
+  // Evidence strength winner
+  const bestEvidence = [...selectedCands].sort(
+    (a, b) => b.verificationRating - a.verificationRating
+  )[0];
+
+  // Matrix rows for required skills
+  const requiredSkillRows = (job.requiredSkills || []).map(reqSkill => {
+    const statusMap: Record<string, { matched: boolean; semantic: boolean; verified: boolean }> = {};
+    selectedCands.forEach(c => {
+      const matchDirect = c.skills.find(s => s.name.toLowerCase() === reqSkill.toLowerCase());
+      const matchSemantic = !matchDirect && c.skills.some(s => {
+        const entry = SKILL_SEMANTIC_ONTOLOGY[reqSkill.toLowerCase()];
+        return entry && (entry.synonyms.includes(s.name.toLowerCase()) || entry.related.includes(s.name.toLowerCase()));
+      });
+      statusMap[c.id] = {
+        matched: !!matchDirect || !!matchSemantic,
+        semantic: !!matchSemantic,
+        verified: !!(matchDirect?.verified),
+      };
+    });
+    return {
+      skill: reqSkill,
+      candidates: statusMap,
+    };
+  });
+
+  res.json({
+    job,
+    candidates: selectedCands,
+    evaluations: candidateEvaluations,
+    requiredSkillRows,
+    winners: {
+      bestSkillFit: { id: bestSkillFit.candidate.id, name: bestSkillFit.candidate.name, score: bestSkillFit.explainable.requiredSkillsMatch },
+      bestExpFit: { id: bestExpFit.candidate.id, name: bestExpFit.candidate.name, years: bestExpFit.candidate.yearsOfExperience },
+      bestEvidence: { id: bestEvidence.id, name: bestEvidence.name, rating: bestEvidence.verificationRating },
+    },
+    verdictSummary: `Across ${selectedCands.length} candidates evaluated against **${job.title}**: **${bestSkillFit.candidate.name}** presents the highest requirement coverage (${bestSkillFit.explainable.requiredSkillsMatch}%), while **${bestEvidence.name}** holds the highest verified evidence rating (${bestEvidence.verificationRating}%).`,
+  });
+});
+
+// GET /api/candidates/:id/match-breakdown (Dynamic Real-Time Match Breakdown vs specified Job)
+apiRouter.get('/candidates/:id/match-breakdown', requireAuth, (req: AuthenticatedRequest, res) => {
+  const candidate = db.getCandidateById(req.params.id, req.orgId || 'org-talentintel-enterprise');
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found.' });
+  }
+
+  const { jobId } = req.query;
+  const job = db.getJobById(jobId as string, req.orgId || 'org-talentintel-enterprise') 
+    || db.getJobById(candidate.targetJobId, req.orgId || 'org-talentintel-enterprise')
+    || db.getJobs(req.orgId || 'org-talentintel-enterprise')[0];
+
+  const explainable = calculateExplainableMatch(candidate, job);
+  const semanticMatch = evaluateSemanticSkillMatch(candidate, job);
+  const { gaps, anomalies } = analyzeCandidateTimeline(candidate);
+
+  res.json({
+    candidateId: candidate.id,
+    jobId: job.id,
+    jobTitle: job.title,
+    explainableMatch: explainable,
+    semanticMatch,
+    timelineGaps: gaps,
+    timelineAnomalies: anomalies,
+  });
+});
+
+// POST /api/candidates/bulk-status (Bulk Shortlist / Stage Move)
+apiRouter.post('/candidates/bulk-status', requireAuth, requireRole(['Admin', 'HR', 'Recruiter', 'Hiring Manager']), (req: AuthenticatedRequest, res) => {
+  const { candidateIds, status, stage, notes } = req.body;
+  if (!Array.isArray(candidateIds) || candidateIds.length === 0) {
+    return res.status(400).json({ error: 'candidateIds array is required.' });
+  }
+  const targetStage = stage || status || 'Shortlisted';
+
+  const updated = db.bulkUpdateCandidateStatus(
+    candidateIds,
+    targetStage,
+    req.orgId || 'org-talentintel-enterprise',
+    req.user!.name,
+    notes
+  );
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId: req.orgId!,
+    action: 'CANDIDATES_BULK_STATUS_UPDATED',
+    entityType: 'candidate',
+    entityId: candidateIds.join(','),
+    details: `Bulk status update to '${targetStage}' for ${updated.length} candidates.`,
+  });
+
+  res.json({ success: true, count: updated.length, candidates: updated });
+});
+
+// POST /api/candidates/bulk-archive
+apiRouter.post('/candidates/bulk-archive', requireAuth, requireRole(['Admin', 'HR', 'Recruiter']), (req: AuthenticatedRequest, res) => {
+  const { candidateIds, archive = true } = req.body;
+  if (!Array.isArray(candidateIds) || candidateIds.length === 0) {
+    return res.status(400).json({ error: 'candidateIds array is required.' });
+  }
+
+  const updated = db.bulkArchiveCandidates(candidateIds, req.orgId || 'org-talentintel-enterprise', archive);
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId: req.orgId!,
+    action: archive ? 'CANDIDATES_BULK_ARCHIVED' : 'CANDIDATES_BULK_RESTORED',
+    entityType: 'candidate',
+    entityId: candidateIds.join(','),
+    details: `Bulk ${archive ? 'archived' : 'restored'} ${updated.length} candidates.`,
+  });
+
+  res.json({ success: true, count: updated.length, candidates: updated });
+});
+
+// GET /api/candidates/:id/duplicates (Duplicate Application Detection)
+apiRouter.get('/candidates/:id/duplicates', requireAuth, (req: AuthenticatedRequest, res) => {
+  const candidate = db.getCandidateById(req.params.id, req.orgId || 'org-talentintel-enterprise');
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found.' });
+  }
+
+  const allCandidates = db.getCandidates(req.orgId || 'org-talentintel-enterprise', { includeArchived: true });
+  const duplicateFlag = detectDuplicateCandidates(candidate, allCandidates);
+
+  res.json({
+    candidateId: candidate.id,
+    hasDuplicates: duplicateFlag.isDuplicate,
+    duplicate: duplicateFlag,
+  });
+});
+
+// GET /api/candidates/:id/interview-analysis (Interview Feedback Synthesis & Question Probes)
+apiRouter.get('/candidates/:id/interview-analysis', requireAuth, (req: AuthenticatedRequest, res) => {
+  const candidate = db.getCandidateById(req.params.id, req.orgId || 'org-talentintel-enterprise');
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found.' });
+  }
+
+  const records = db.getInterviewRecords(candidate.id, req.orgId || 'org-talentintel-enterprise');
+  const analysis = analyzeInterviewFeedback(records);
+
+  res.json({
+    candidateId: candidate.id,
+    interviewRecords: records,
+    analysis,
+  });
+});
+
+// GET /api/interviews/all (All interview records for tenant)
+apiRouter.get('/interviews/all', requireAuth, (req: AuthenticatedRequest, res) => {
+  const records = db.getAllInterviewRecords(req.orgId || 'org-talentintel-enterprise');
+  res.json({ interviewRecords: records });
+});
+
+// GET /api/analytics/pipeline (Live Talent Intelligence & Pipeline Analytics)
+apiRouter.get('/analytics/pipeline', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const candidates = db.getCandidates(orgId, { includeArchived: true });
+  const jobs = db.getJobs(orgId);
+
+  const analytics = calculateHRPipelineAnalytics(candidates, jobs);
+  res.json({ analytics });
+});
+
+// ==========================================
+// 7. SECURE DATA EXPORT (Multi-Tenant & IDOR Protected)
+// ==========================================
+
+// GET /api/candidates/:id/export (Export single candidate dossier)
+apiRouter.get('/candidates/:id/export', requireAuth, requireRole(['Admin', 'HR', 'Recruiter', 'Hiring Manager']), (req: AuthenticatedRequest, res) => {
+  const candidate = db.getCandidateById(req.params.id, req.orgId || 'org-talentintel-enterprise');
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found or access denied.' });
+  }
+
+  const format = String(req.query.format || 'json').toLowerCase();
+  const safeFilename = `candidate_${candidate.name.replace(/[^a-zA-Z0-9]/g, '_')}_dossier`;
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId: req.orgId!,
+    action: 'CANDIDATE_DATA_EXPORTED',
+    entityType: 'candidate',
+    entityId: candidate.id,
+    details: `Exported dossier for candidate ${candidate.name} in '${format}' format.`,
+  });
+
+  if (format === 'csv') {
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.csv"`);
+    const csvContent = [
+      'ID,Name,Email,Current Role,Current Company,Location,Years Experience,Overall Fit Score,Verification Rating,Status',
+      `"${candidate.id}","${candidate.name}","${candidate.email}","${candidate.currentRole}","${candidate.currentCompany}","${candidate.location}",${candidate.yearsOfExperience},${candidate.overallFitScore},${candidate.verificationRating},"${candidate.status}"`
+    ].join('\n');
+    return res.send(csvContent);
+  }
+
+  if (format === 'md' || format === 'markdown') {
+    res.setHeader('Content-Type', 'text/markdown');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.md"`);
+    const mdContent = `# Candidate Intelligence Dossier: ${candidate.name}
+**Role:** ${candidate.currentRole} at ${candidate.currentCompany}
+**Location:** ${candidate.location} | **Experience:** ${candidate.yearsOfExperience} years
+**Fit Score:** ${candidate.overallFitScore}% | **Verification Rating:** ${candidate.verificationRating}%
+**Status:** ${candidate.status}
+
+## Summary
+${candidate.summary}
+
+## Key Strengths
+${candidate.keyStrengths.map(s => `- ${s}`).join('\n')}
+
+## Skills
+${candidate.skills.map(s => `- ${s.name} (${s.level || 'proficient'}) ${s.verified ? '[VERIFIED]' : '[UNVERIFIED]'}`).join('\n')}
+
+---
+*Exported securely by ${req.user!.name} on ${new Date().toISOString()} via TalentIntel*`;
+    return res.send(mdContent);
+  }
+
+  // Default: JSON
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.json"`);
+  res.json({ candidate, exportedBy: req.user!.name, exportedAt: new Date().toISOString() });
+});
+
+// GET /api/candidates/export-all (Bulk Export all candidates for organization)
+apiRouter.get('/candidates/export-all', requireAuth, requireRole(['Admin', 'HR']), (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const candidates = db.getCandidates(orgId, { includeArchived: true });
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId: req.orgId!,
+    action: 'BULK_CANDIDATE_DATA_EXPORTED',
+    entityType: 'candidate',
+    entityId: 'all',
+    details: `Exported bulk candidate database (${candidates.length} records).`,
+  });
+
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="candidates_export_${orgId}_${Date.now()}.json"`);
+  res.json({
+    organizationId: orgId,
+    totalRecords: candidates.length,
+    exportedAt: new Date().toISOString(),
+    candidates,
+  });
+});
+

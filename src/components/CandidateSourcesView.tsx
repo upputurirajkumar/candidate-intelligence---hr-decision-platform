@@ -258,7 +258,7 @@ export const CandidateSourcesView: React.FC<CandidateSourcesViewProps> = ({
             <h3 className="text-base font-bold text-slate-100">Candidate Input Sources & Evidence Repositories</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Audited source pool for <strong className="text-slate-200">{candidate.name}</strong>. Cross-referenced for verifiable proof and ground truth extraction.
+            Audited source pool for <strong className="text-slate-200">{candidate?.name || 'Candidate'}</strong>. Cross-referenced for verifiable proof and ground truth extraction.
           </p>
         </div>
 
@@ -323,18 +323,18 @@ export const CandidateSourcesView: React.FC<CandidateSourcesViewProps> = ({
               <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
                 <p className="text-[11px] text-slate-400">Document Name:</p>
                 <p className="font-semibold text-slate-200 truncate font-mono text-[11px]">
-                  {resumeDoc?.name || `${candidate.name.replace(/\s+/g, '_')}_Resume.pdf`}
+                  {resumeDoc?.name || `${(candidate?.name || 'Candidate').replace(/\s+/g, '_')}_Resume.pdf`}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px]">
                 <div className="bg-slate-950 p-2 rounded-lg border border-slate-800/80">
                   <span className="text-slate-400">Claims Extracted</span>
-                  <p className="font-bold text-indigo-400">{candidate.claims.length || 6}</p>
+                  <p className="font-bold text-indigo-400">{candidate?.claims?.length || 6}</p>
                 </div>
                 <div className="bg-slate-950 p-2 rounded-lg border border-slate-800/80">
                   <span className="text-slate-400">Tenures Parsed</span>
-                  <p className="font-bold text-emerald-400">{candidate.experiences.length}</p>
+                  <p className="font-bold text-emerald-400">{candidate?.experiences?.length || 0}</p>
                 </div>
               </div>
             </div>
@@ -645,12 +645,12 @@ export const CandidateSourcesView: React.FC<CandidateSourcesViewProps> = ({
 
             <div className="space-y-2 text-xs">
               <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80 min-h-[64px]">
-                {candidate.certifications && candidate.certifications.length > 0 ? (
+                {candidate?.certifications && candidate.certifications.length > 0 ? (
                   <div className="space-y-1 max-h-20 overflow-y-auto pr-1">
                     {candidate.certifications.map(c => (
                       <div key={c.id} className="flex items-center justify-between text-[11px]">
-                        <span className="font-semibold text-slate-200 truncate">{c.name}</span>
-                        <span className="text-amber-400 font-mono text-[10px] uppercase">{c.verificationStatus.replace(/_/g, ' ')}</span>
+                        <span className="font-semibold text-slate-200 truncate">{c?.name || 'Certification'}</span>
+                        <span className="text-amber-400 font-mono text-[10px] uppercase">{(c.verificationStatus || '').replace(/_/g, ' ')}</span>
                       </div>
                     ))}
                   </div>
@@ -706,8 +706,8 @@ export const CandidateSourcesView: React.FC<CandidateSourcesViewProps> = ({
                   <div className="space-y-1 max-h-20 overflow-y-auto pr-1">
                     {otherDocs.map(d => (
                       <div key={d.id} className="flex items-center justify-between text-[11px]">
-                        <span className="font-semibold text-slate-200 truncate">{d.name}</span>
-                        <span className="text-teal-400 font-mono text-[10px] uppercase">{d.format}</span>
+                        <span className="font-semibold text-slate-200 truncate">{d?.name || 'Document'}</span>
+                        <span className="text-teal-400 font-mono text-[10px] uppercase">{d?.format || 'PDF'}</span>
                       </div>
                     ))}
                   </div>
@@ -762,7 +762,7 @@ export const CandidateSourcesView: React.FC<CandidateSourcesViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                <h4 className="text-sm font-bold text-slate-100">{selectedSourceForDetail.name}</h4>
+                <h4 className="text-sm font-bold text-slate-100">{selectedSourceForDetail?.name || 'Source Records'}</h4>
               </div>
               <button
                 onClick={() => setSelectedSourceForDetail(null)}

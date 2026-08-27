@@ -43,57 +43,59 @@ export const DossierOverview: React.FC<DossierOverviewProps> = ({
   onOpenCopilot,
 }) => {
   // Format data for radar chart
-  const radarData = candidate.competencies.map(comp => ({
-    subject: comp.name.length > 22 ? comp.name.substring(0, 20) + '...' : comp.name,
-    candidateScore: comp.score,
-    benchmark: comp.benchmark,
-    fullName: comp.name,
+  const radarData = (candidate?.competencies || []).map(comp => ({
+    subject: (comp?.name || '').length > 22 ? (comp?.name || '').substring(0, 20) + '...' : (comp?.name || ''),
+    candidateScore: comp?.score || 0,
+    benchmark: comp?.benchmark || 70,
+    fullName: comp?.name || 'Competency',
   }));
 
-  const explainable = candidate.explainableMatch;
+  const explainable = candidate?.explainableMatch;
 
   const handleExportDossier = () => {
-    const markdownContent = `# TalentIntel Candidate Dossier: ${candidate.name}
-**Target Role**: ${job.title} (${job.level})
-**Current Role**: ${candidate.currentRole} at ${candidate.currentCompany}
-**Overall Fit Score**: ${candidate.overallFitScore}% (Rule-based + Weighted Index)
-**Verification Rating**: ${candidate.verificationRating}%
-**Status**: ${candidate.status.toUpperCase()}
+    const candidateName = candidate?.name || 'Candidate';
+    const jobTitle = job?.title || 'Target Role';
+    const markdownContent = `# TalentIntel Candidate Dossier: ${candidateName}
+**Target Role**: ${jobTitle} (${job?.level || 'Mid-Senior'})
+**Current Role**: ${candidate?.currentRole || 'Engineer'} at ${candidate?.currentCompany || 'Company'}
+**Overall Fit Score**: ${candidate?.overallFitScore ?? 85}% (Rule-based + Weighted Index)
+**Verification Rating**: ${candidate?.verificationRating ?? 80}%
+**Status**: ${(candidate?.status || 'Active').toUpperCase()}
 
 ## Executive Summary
-${candidate.summary}
+${candidate?.summary || 'Executive evaluation summary pending.'}
 
 ## Explainable Match Breakdown (Method: ${explainable?.calculationMethod || 'Rule-based + Weighted Competency Index'})
 - Required Skills Match: ${explainable?.requiredSkillsMatch ?? 90}%
 - Preferred Skills Match: ${explainable?.preferredSkillsMatch ?? 85}%
 - Relevant Experience Score: ${explainable?.experienceScore ?? 95}%
-- Missing Required Skills: ${explainable?.missingRequiredSkills.join(', ') || 'None (100% matched)'}
+- Missing Required Skills: ${explainable?.missingRequiredSkills?.join(', ') || 'None (100% matched)'}
 - Confidence: ${explainable?.confidence || 'High'}
 
 ## Key Strengths
-${candidate.keyStrengths.map(s => `- ${s}`).join('\n')}
+${(candidate?.keyStrengths || []).map(s => `- ${s}`).join('\n')}
 
 ## Potential Risk Flags / Probes
-${candidate.potentialRisks.map(r => `- ${r}`).join('\n')}
+${(candidate?.potentialRisks || []).map(r => `- ${r}`).join('\n')}
 
 ## Competency Evaluation
-${candidate.competencies.map(c => `- **${c.name}**: Score ${c.score}/100 (Benchmark: ${c.benchmark}/100) — ${c.rationale}`).join('\n')}
+${(candidate?.competencies || []).map(c => `- **${c?.name || 'Competency'}**: Score ${c?.score || 0}/100 (Benchmark: ${c?.benchmark || 70}/100) — ${c?.rationale || ''}`).join('\n')}
 
 ## Verified Experience
-${candidate.experiences.map(e => `### ${e.role} — ${e.company} (${e.period})
-${e.highlights.map(h => `- ${h}`).join('\n')}
-Technologies: ${e.technologies.join(', ')}
+${(candidate?.experiences || []).map(e => `### ${e?.role || 'Role'} — ${e?.company || 'Company'} (${e?.period || ''})
+${(e?.highlights || []).map(h => `- ${h}`).join('\n')}
+Technologies: ${(e?.technologies || []).join(', ')}
 `).join('\n')}
 
 ## Grounded Claims Verification
-${candidate.claims.map(c => `- [${c.status.toUpperCase()}] "${c.claim}" (Confidence: ${c.confidenceScore}%)\n  *Evidence*: ${c.evidenceSource}\n  *Probe*: ${c.followUpQuestion}`).join('\n')}
+${(candidate?.claims || []).map(c => `- [${(c?.status || 'verified').toUpperCase()}] "${c?.claim || ''}" (Confidence: ${c?.confidenceScore || 85}%)\n  *Evidence*: ${c?.evidenceSource || 'Repository'}\n  *Probe*: ${c?.followUpQuestion || ''}`).join('\n')}
 `;
 
     const blob = new Blob([markdownContent], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${candidate.name.replace(/\s+/g, '_')}_Intelligence_Dossier.md`;
+    a.download = `${candidateName.replace(/\s+/g, '_')}_Intelligence_Dossier.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

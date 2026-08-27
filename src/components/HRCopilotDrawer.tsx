@@ -17,8 +17,8 @@ import {
 interface HRCopilotDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  candidate: Candidate;
-  job: JobProfile;
+  candidate?: Candidate | null;
+  job?: JobProfile | null;
 }
 
 export const HRCopilotDrawer: React.FC<HRCopilotDrawerProps> = ({
@@ -27,12 +27,15 @@ export const HRCopilotDrawer: React.FC<HRCopilotDrawerProps> = ({
   candidate,
   job,
 }) => {
+  const candidateName = candidate?.name || 'the active candidate';
+  const jobTitle = job?.title || 'the target requisition';
+
   const [messages, setMessages] = useState<CopilotMessage[]>([
     {
       id: 'welcome',
       sender: 'assistant',
       content: `Hello! I am your **TalentIntel AI Decision Copilot**. 
-I have grounded context on **${candidate.name}** evaluating against the **${job.title}** specification.
+I have grounded context on **${candidate?.name || 'your candidates'}** evaluating against the **${job?.title || 'active requisition'}** specification.
 
 You can ask me to:
 - Draft personalized offer letters and compensation negotiation anchors.
@@ -83,8 +86,8 @@ You can ask me to:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: query,
-          candidateId: candidate.id,
-          jobId: job.id,
+          candidateId: candidate?.id,
+          jobId: job?.id,
           history: messages.slice(-6).map(m => ({ sender: m.sender, content: m.content })),
         }),
       });
@@ -128,7 +131,7 @@ You can ask me to:
             <div>
               <h3 className="text-sm font-bold">TalentIntel AI Copilot</h3>
               <p className="text-[11px] text-slate-400">
-                Context: <span className="text-indigo-200 font-semibold">{candidate.name}</span> ({candidate.overallFitScore}% Fit)
+                Context: <span className="text-indigo-200 font-semibold">{candidate?.name || 'Active Candidate'}</span> ({candidate?.overallFitScore ?? 85}% Fit)
               </p>
             </div>
           </div>
@@ -254,7 +257,7 @@ You can ask me to:
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder={`Ask anything about ${candidate.name} or ${job.title}...`}
+              placeholder={`Ask anything about ${candidate?.name || 'candidates'} or ${job?.title || 'the job'}...`}
               className="flex-1 text-xs border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
             <button

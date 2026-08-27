@@ -5,9 +5,27 @@ import { User, UserRole } from '../../src/types';
 
 const TOKEN_SECRET = process.env.SESSION_SECRET || 'talentintel-auth-sec-2026-enterprise';
 
+// In-memory token revocation registry
+const REVOKED_TOKENS = new Set<string>();
+
+export function revokeToken(token: string) {
+  if (token) {
+    REVOKED_TOKENS.add(token);
+    // Cleanup if set grows too large
+    if (REVOKED_TOKENS.size > 10000) {
+      REVOKED_TOKENS.clear();
+    }
+  }
+}
+
+export function isTokenRevoked(token: string): boolean {
+  return REVOKED_TOKENS.has(token);
+}
+
 export interface AuthenticatedRequest extends Request {
   user?: User;
   orgId?: string;
+  rawToken?: string;
 }
 
 export function generateToken(user: User): string {
@@ -25,6 +43,8 @@ export function generateToken(user: User): string {
 
 export function verifyToken(token: string): { userId: string; email: string; orgId: string; role: UserRole } | null {
   try {
+    if (isTokenRevoked(token)) return null;
+
     const [payloadStr, signature] = token.split('.');
     if (!payloadStr || !signature) return null;
 
@@ -58,6 +78,10 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
     return res.status(401).json({ error: 'Authentication required. No session token provided in Authorization header.' });
   }
 
+  if (isTokenRevoked(token)) {
+    return res.status(401).json({ error: 'Session has been invalidated. Please log in again.' });
+  }
+
   const verified = verifyToken(token);
   if (!verified) {
     return res.status(401).json({ error: 'Invalid or expired session token. Please log in again.' });
@@ -70,6 +94,7 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
 
   req.user = user;
   req.orgId = user.orgId;
+  req.rawToken = token;
   next();
 }
 

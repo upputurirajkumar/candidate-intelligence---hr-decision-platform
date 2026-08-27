@@ -99,7 +99,14 @@ export class PersistentDatabase {
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (!parsed.interviewRecords) parsed.interviewRecords = [];
+        if (!parsed.candidates) parsed.candidates = [];
+        if (!parsed.jobs) parsed.jobs = [];
+        if (!parsed.auditLogs) parsed.auditLogs = [];
+        if (!parsed.users) parsed.users = INITIAL_USERS;
+        if (!parsed.organizations) parsed.organizations = [];
+        return parsed;
       }
     } catch (err) {
       console.error('Failed to read db file, initializing defaults:', err);
@@ -354,12 +361,13 @@ export class PersistentDatabase {
   }
 
   // --- Interview Records ---
-  public addInterviewRecord(record: Omit<InterviewRecord, 'id' | 'createdAt'>, orgId: string): InterviewRecord {
+  public addInterviewRecord(record: Omit<InterviewRecord, 'id' | 'createdAt' | 'orgId'> & { orgId?: string }, orgId: string): InterviewRecord {
+    const finalOrgId = orgId || record.orgId || DEFAULT_ORG_ID;
     const newRec: InterviewRecord = {
       id: `intv-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
       createdAt: new Date().toISOString(),
-      orgId,
       ...record,
+      orgId: finalOrgId,
     };
     this.data.interviewRecords.unshift(newRec);
     this.save();

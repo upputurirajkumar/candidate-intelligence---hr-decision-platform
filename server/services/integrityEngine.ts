@@ -592,8 +592,8 @@ export function evaluateSemanticSkillMatch(
  */
 export function generateEvidenceGroundedSummary(
   candidate: Candidate,
-  job: JobProfile,
-  consistencyReport: CrossSourceConsistencyReport
+  job?: JobProfile,
+  consistencyReport?: CrossSourceConsistencyReport
 ): {
   executiveSummary: string;
   strengths: string[];
@@ -608,9 +608,10 @@ export function generateEvidenceGroundedSummary(
   const verifiedClaimCount = (candidate.claims || []).filter(c => c.status === 'verified').length;
   const totalClaims = (candidate.claims || []).length || 1;
   const verifiedPercentage = Math.round((verifiedClaimCount / totalClaims) * 100);
+  const targetJobTitle = job?.title || candidate.targetJobId || 'Target Requisition';
 
   return {
-    executiveSummary: `${candidate.name} is a ${candidate.currentRole} with ${candidate.yearsOfExperience} years of experience, evaluated against '${job.title}'. The candidate presents strong technical depth in distributed systems with an overall fit rating of ${candidate.overallFitScore}%.`,
+    executiveSummary: `${candidate.name} is a ${candidate.currentRole} with ${candidate.yearsOfExperience} years of experience, evaluated against '${targetJobTitle}'. The candidate presents strong technical depth with an overall fit rating of ${candidate.overallFitScore}%.`,
     strengths: candidate.keyStrengths || [
       'Extensive hands-on systems architecture experience',
       'Demonstrated high-scale production metrics',
@@ -620,9 +621,9 @@ export function generateEvidenceGroundedSummary(
     relevantProjects: `Documented contributions to large-scale distributed streaming and infrastructure automation frameworks.`,
     skillMatch: `High alignment on core requirements (${(candidate.skills || []).slice(0, 4).map(s => s.name).join(', ')}).`,
     evidenceQuality: `${verifiedPercentage}% of evaluated resume claims are corroborated by observed evidence or third-party verified records.`,
-    potentialConcerns: consistencyReport.conflicts.map(c => c.description),
-    missingInformation: consistencyReport.missingSignals,
-    recommendedFollowUp: consistencyReport.conflicts.length > 0
+    potentialConcerns: consistencyReport?.conflicts?.map(c => c.description) || candidate.potentialRisks || [],
+    missingInformation: consistencyReport?.missingSignals || [],
+    recommendedFollowUp: consistencyReport?.conflicts && consistencyReport.conflicts.length > 0
       ? consistencyReport.conflicts[0].recommendedAction
       : 'Advance candidate to technical architecture panel interview.',
   };

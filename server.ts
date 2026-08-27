@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { apiRouter } from './server/routes/api';
+import { generalApiRateLimiter } from './server/middleware/rateLimit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,17 +12,41 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Global Middlewares
-  app.use(express.json({ limit: '20mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+  // Disable server identification header
+  app.disable('x-powered-by');
 
-  // API Health Endpoint
+  // Enterprise Security Headers
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    next();
+  });
+
+  // Global Body Parsers with strict size limits
+  app.use(express.json({ limit: '15mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+  // API Health Endpoint (Anonymous permitted for monitoring)
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // REST API Routes
-  app.use('/api', apiRouter);
+  // Rate Limiter & REST API Routes
+  app.use('/api', generalApiRateLimiter, apiRouter);
+
+  // Global Safe Error Handler for API routes
+  app.use('/api', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('[API Server Error]:', err.message || err);
+    // Never expose stack traces or internal DB errors to client
+    const status = typeof err.status === 'number' ? err.status : 500;
+    const message = status === 400 || status === 401 || status === 403 || status === 404
+      ? err.message
+      : 'An unexpected server error occurred. Please try again later.';
+    res.status(status).json({ error: message });
+  });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
