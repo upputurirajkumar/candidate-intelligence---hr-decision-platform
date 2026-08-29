@@ -34,7 +34,7 @@ import {
 interface AnalyticsReportsViewProps {
   candidates: Candidate[];
   jobs: JobProfile[];
-  selectedJob: JobProfile;
+  selectedJob?: JobProfile | null;
   activeCandidate: Candidate;
   onSelectCandidate: (id: string) => void;
 }
@@ -200,10 +200,10 @@ export const AnalyticsReportsView: React.FC<AnalyticsReportsViewProps> = ({
             <span>Active Target Requisition</span>
             <Briefcase className="w-4 h-4 text-indigo-500" />
           </div>
-          <div className="text-sm font-bold text-slate-900 truncate" title={selectedJob.title}>
-            {selectedJob.title}
+          <div className="text-sm font-bold text-slate-900 truncate" title={selectedJob?.title || 'Target Requisition'}>
+            {selectedJob?.title || 'Target Requisition'}
           </div>
-          <div className="text-[11px] text-indigo-600 font-mono">{selectedJob.salaryRange}</div>
+          <div className="text-[11px] text-indigo-600 font-mono">{selectedJob?.salaryRange || '$180,000 - $240,000'}</div>
         </div>
       </div>
 
@@ -321,7 +321,7 @@ export const AnalyticsReportsView: React.FC<AnalyticsReportsViewProps> = ({
                 <span className="font-bold text-slate-900">Candidate:</span> {activeCandidate.name} ({activeCandidate.currentRole} at {activeCandidate.currentCompany})
               </div>
               <div>
-                <span className="font-bold text-slate-900">Target Role:</span> {selectedJob.title} ({selectedJob.department})
+                <span className="font-bold text-slate-900">Target Role:</span> {selectedJob?.title || 'Target Requisition'} ({selectedJob?.department || 'General'})
               </div>
               <div className="grid grid-cols-3 gap-2 py-2 bg-white p-3 rounded-lg border border-slate-200">
                 <div>
@@ -361,7 +361,7 @@ export const AnalyticsReportsView: React.FC<AnalyticsReportsViewProps> = ({
 
           {activeReportType === 'job_ranking' && (
             <div className="space-y-3">
-              <div className="font-bold text-slate-900">Top Ranked Candidates for {selectedJob.title}:</div>
+              <div className="font-bold text-slate-900">Top Ranked Candidates for {selectedJob?.title || 'Target Requisition'}:</div>
               <div className="space-y-1">
                 {[...candidates].sort((a, b) => b.overallFitScore - a.overallFitScore).map((c, i) => (
                   <div key={c.id} className="flex justify-between items-center bg-white p-2 rounded border border-slate-200">

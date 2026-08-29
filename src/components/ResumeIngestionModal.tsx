@@ -146,20 +146,20 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
       <div
         id="resume-ingestion-modal"
-        className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95 duration-200"
+        className="bg-slate-900 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-800 space-y-5 animate-in zoom-in-95 duration-200"
       >
         {/* Modal Header */}
-        <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+        <div className="flex items-start justify-between border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+            <div className="p-2.5 bg-indigo-950 text-cyan-400 border border-indigo-800/60 rounded-2xl">
               <Upload className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Ingest Candidate Resume</h3>
-              <p className="text-xs text-slate-500">
+              <h3 className="text-base font-bold text-slate-100">Ingest Candidate Resume</h3>
+              <p className="text-xs text-slate-400">
                 Multi-agent orchestration parses, fact-checks, and calibrates fit instantly
               </p>
             </div>
@@ -167,7 +167,7 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -175,20 +175,20 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
 
         {/* Error Notification */}
         {errorMessage && (
-          <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
+          <div className="p-3.5 bg-rose-950/50 border border-rose-800 text-rose-200 rounded-xl text-xs flex items-center gap-2">
             <span className="font-bold">Error:</span> {errorMessage}
           </div>
         )}
 
         {/* Target Job Selector */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+          <label className="block text-xs font-bold text-slate-300 mb-1.5">
             Calibrate Fit Against Target Role:
           </label>
           <select
             value={targetJobId}
             onChange={(e) => setTargetJobId(e.target.value)}
-            className="w-full text-xs font-medium bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            className="w-full text-xs font-medium bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:ring-2 focus:ring-indigo-500 cursor-pointer focus:outline-hidden"
           >
             {jobs.map(job => (
               <option key={job.id} value={job.id}>
@@ -199,14 +199,14 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
         </div>
 
         {/* Ingestion Mode Switcher */}
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
           <button
             type="button"
             onClick={() => { setActiveMode('upload'); setErrorMessage(null); }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
               activeMode === 'upload'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-750 hover:text-slate-200'
             }`}
           >
             Attach Document (PDF, DOCX, TXT)
@@ -214,10 +214,10 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
           <button
             type="button"
             onClick={() => { setActiveMode('text'); setErrorMessage(null); }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
               activeMode === 'text'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-750 hover:text-slate-200'
             }`}
           >
             Paste Text / Markdown
@@ -235,10 +235,10 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
               const file = e.dataTransfer.files?.[0];
               if (file) handleFileChange(file);
             }}
-            className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+            className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all ${
               isDragging
-                ? 'border-indigo-500 bg-indigo-50/50'
-                : 'border-slate-300 bg-slate-50/60 hover:bg-slate-50'
+                ? 'border-cyan-400 bg-cyan-950/20'
+                : 'border-slate-800 bg-slate-950/60 hover:bg-slate-950'
             }`}
           >
             <input
@@ -252,20 +252,20 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
               className="hidden"
             />
             <label htmlFor="resume-file-input" className="cursor-pointer space-y-2 block">
-              <div className="w-10 h-10 mx-auto rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
+              <div className="w-10 h-10 mx-auto rounded-xl bg-indigo-950/80 text-cyan-400 border border-indigo-800/60 flex items-center justify-center">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-800">
+                <p className="text-xs font-bold text-slate-200">
                   {selectedFile ? selectedFile.name : 'Click to select or drag & drop candidate resume'}
                 </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-slate-400 mt-0.5">
                   Supported formats: PDF, DOCX, TXT, Markdown (Max 10MB)
                 </p>
               </div>
               {selectedFile && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-[11px] rounded-full mt-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold text-[11px] rounded-full mt-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   Ready to parse ({Math.round(selectedFile.size / 1024)} KB)
                 </div>
               )}
@@ -277,7 +277,7 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
         {activeMode === 'text' && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-slate-700">
+              <label className="text-xs font-bold text-slate-300">
                 Resume Content:
               </label>
             </div>
@@ -287,14 +287,14 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
               onChange={(e) => setResumeText(e.target.value)}
               placeholder="Paste candidate CV, LinkedIn profile export, or resume markdown here..."
               rows={7}
-              className="w-full text-xs font-mono p-3 bg-slate-50 border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-slate-800"
+              className="w-full text-xs font-mono p-3 bg-slate-950 border border-slate-800 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-slate-200"
             />
           </div>
         )}
 
         {/* Quick Sample Presets */}
         <div>
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
             Or Load Benchmark Profiles:
           </span>
           <div className="flex flex-wrap gap-2">
@@ -303,9 +303,9 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => handleSelectSample(sample.snippet)}
-                className="text-xs bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 text-slate-700 font-medium px-3 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer flex items-center gap-1.5"
+                className="text-xs bg-slate-950 hover:bg-slate-850 text-slate-300 font-medium px-3 py-1.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer flex items-center gap-1.5"
               >
-                <FileCode className="w-3.5 h-3.5" />
+                <FileCode className="w-3.5 h-3.5 text-cyan-400" />
                 <span>{sample.title}</span>
               </button>
             ))}
@@ -314,25 +314,25 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
 
         {/* Agent Ingestion Progress Bar if active */}
         {isAnalyzing && (
-          <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-2">
-            <div className="flex items-center justify-between text-xs text-indigo-900 font-semibold">
+          <div className="p-4 bg-indigo-950/50 border border-indigo-900/80 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between text-xs text-cyan-300 font-semibold">
               <span className="flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-indigo-600 animate-spin" />
+                <Cpu className="w-4 h-4 text-cyan-400 animate-spin" />
                 {agentProgressStep}
               </span>
             </div>
-            <div className="w-full bg-indigo-200 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-indigo-600 h-full rounded-full animate-pulse w-3/4"></div>
+            <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div className="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full rounded-full animate-pulse w-3/4"></div>
             </div>
           </div>
         )}
 
         {/* Modal Actions */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -342,7 +342,7 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
             type="button"
             onClick={handleRunAgentPipeline}
             disabled={isAnalyzing || (activeMode === 'upload' ? !selectedFile : !resumeText.trim())}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow-md transition-all cursor-pointer disabled:opacity-50"
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
             <span>{isAnalyzing ? 'Orchestrating Agents...' : 'Run Autonomous Multi-Agent Analysis'}</span>

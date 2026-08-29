@@ -28,6 +28,7 @@ interface GlobalNavbarProps {
   onOpenAuth: () => void;
   onLogout: () => void;
   onOpenCopilot: () => void;
+  onOpenUniverse?: () => void;
   selectedJob?: JobProfile | null;
 }
 
@@ -38,6 +39,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   onOpenAuth,
   onLogout,
   onOpenCopilot,
+  onOpenUniverse,
   selectedJob,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -99,6 +101,19 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                   </button>
                 );
               })}
+
+              {onOpenUniverse && (
+                <button
+                  id="navbar-btn-role-universe"
+                  onClick={onOpenUniverse}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold text-cyan-300 hover:text-white bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-700/50 flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Explore 30+ Enterprise Roles Topology"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Role Universe</span>
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">30+</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -107,7 +122,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             <div className="hidden xl:flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
               <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
               <span className="text-slate-400 text-[11px]">Active Requisition:</span>
-              <span className="font-semibold text-slate-200 truncate max-w-[160px]">{selectedJob.title}</span>
+              <span className="font-semibold text-slate-200 truncate max-w-[160px]">{selectedJob?.title || 'Target Role'}</span>
             </div>
           )}
 
@@ -205,6 +220,24 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                 </button>
               );
             })}
+
+            {onOpenUniverse && (
+              <button
+                onClick={() => {
+                  onOpenUniverse();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-between text-cyan-300 hover:bg-slate-900 cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <span>Role Universe (30+ Roles)</span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  Topology
+                </span>
+              </button>
+            )}
           </div>
         )}
       </div>

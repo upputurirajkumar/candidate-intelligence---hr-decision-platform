@@ -18,7 +18,7 @@ import {
 
 interface InterviewIntelligenceViewProps {
   candidate: Candidate;
-  job: JobProfile;
+  job?: JobProfile | null;
   onAddQuestion: (newQuestion: InterviewQuestion) => void;
   onOpenCopilot: () => void;
 }
@@ -130,26 +130,26 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
   const getDifficultyBadge = (diff: InterviewQuestion['difficulty']) => {
     switch (diff) {
       case 'principal':
-        return <span className="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded">Principal Level (L6+)</span>;
+        return <span className="bg-purple-950/80 text-purple-300 border border-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-md">Principal Level (L6+)</span>;
       case 'advanced':
-        return <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">Advanced</span>;
+        return <span className="bg-sky-950/80 text-sky-300 border border-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-md">Advanced</span>;
       default:
-        return <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded">Intermediate</span>;
+        return <span className="bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-md">Intermediate</span>;
     }
   };
 
   return (
     <div id="interview-intelligence-container" className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="bg-slate-900/90 rounded-2xl border border-slate-800/80 p-6 shadow-md backdrop-blur-xl">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+            <div className="p-2.5 bg-indigo-950/80 text-cyan-400 border border-indigo-800/60 rounded-xl">
               <HelpCircle className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Tailored Live Interview Intelligence & Rubrics</h2>
-              <p className="text-xs text-slate-500">
+              <h2 className="text-lg font-bold text-slate-100">Tailored Live Interview Intelligence & Rubrics</h2>
+              <p className="text-xs text-slate-400">
                 Grounded questions targeting resume assertions, weak spots, and L6+ competencies
               </p>
             </div>
@@ -160,79 +160,79 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
               id="btn-generate-ai-probe"
               onClick={handleGenerateFreshProbes}
               disabled={isGenerating}
-              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span>{isGenerating ? 'Generating Probes...' : 'Generate New Probe Question'}</span>
             </button>
             <button
               onClick={onOpenCopilot}
-              className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-lg transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-750 px-3.5 py-2 rounded-xl border border-slate-700 transition-colors cursor-pointer"
             >
-              <MessageSquare className="w-3.5 h-3.5" />
+              <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
               <span>Copilot Q&A</span>
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 text-xs">
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-            <span className="text-slate-500 block mb-0.5">Target Role Calibration</span>
-            <span className="font-bold text-slate-900">{job.title}</span>
+          <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl">
+            <span className="text-slate-400 block mb-0.5">Target Role Calibration</span>
+            <span className="font-bold text-slate-100">{job?.title || 'Target Requisition'}</span>
           </div>
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-            <span className="text-slate-500 block mb-0.5">Scored Questions</span>
-            <span className="font-bold text-slate-900">
+          <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl">
+            <span className="text-slate-400 block mb-0.5">Scored Questions</span>
+            <span className="font-bold text-cyan-300">
               {Object.keys(questionScores).length} / {candidate.interviewQuestions.length} completed
             </span>
           </div>
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-            <span className="text-slate-500 block mb-0.5">Evaluator Standard</span>
-            <span className="font-bold text-emerald-700">Strict Non-Hallucinatory Rubric</span>
+          <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl">
+            <span className="text-slate-400 block mb-0.5">Evaluator Standard</span>
+            <span className="font-bold text-emerald-400">Strict Non-Hallucinatory Rubric</span>
           </div>
         </div>
       </div>
 
       {/* Structured Historical Interview Logs Section */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <History className="w-4 h-4 text-indigo-600" />
+      <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-md space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <History className="w-4 h-4 text-cyan-400" />
             <span>Interview Records & Committee Evaluations</span>
           </h3>
-          <span className="text-xs text-slate-500 font-mono">
+          <span className="text-xs text-slate-400 font-mono">
             {interviewRecords.length} recorded session{interviewRecords.length !== 1 ? 's' : ''}
           </span>
         </div>
 
         {interviewRecords.length === 0 ? (
-          <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
-            <p className="font-medium">No previous interview record found.</p>
-            <p className="text-[11px] text-slate-400 mt-1">
+          <div className="p-6 text-center text-xs text-slate-400 bg-slate-950 rounded-xl border border-slate-800">
+            <p className="font-medium text-slate-300">No previous interview record found.</p>
+            <p className="text-[11px] text-slate-500 mt-1">
               Score live questions below and submit the evaluation to log official feedback.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
             {interviewRecords.map((record) => (
-              <div key={record.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+              <div key={record.id} className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900">
-                    {record.stage} • <span className="text-indigo-600">{record.interviewerName}</span> ({record.interviewerRole})
+                  <span className="font-bold text-slate-100">
+                    {record.stage} • <span className="text-cyan-400">{record.interviewerName}</span> ({record.interviewerRole})
                   </span>
                   <span className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
                     record.recommendation === 'Strong Hire' || record.recommendation === 'Hire'
-                      ? 'bg-emerald-100 text-emerald-800'
+                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                       : record.recommendation.includes('Leaning')
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-rose-100 text-rose-800'
+                      ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                      : 'bg-rose-950 text-rose-300 border border-rose-800'
                   }`}>
                     {record.recommendation}
                   </span>
                 </div>
-                <div className="text-slate-500 text-[11px]">Conducted on {record.date}</div>
+                <div className="text-slate-400 text-[11px]">Conducted on {record.date}</div>
                 {record.notes && (
-                  <p className="text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200/80 leading-relaxed">
+                  <p className="text-slate-300 bg-slate-900 p-2.5 rounded-lg border border-slate-800 leading-relaxed">
                     {record.notes}
                   </p>
                 )}
@@ -252,33 +252,33 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
             <div
               key={q.id}
               id={`interview-q-${q.id}`}
-              className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden transition-all"
+              className="bg-slate-900 rounded-2xl border border-slate-800 shadow-md overflow-hidden transition-all"
             >
               {/* Question Header Accordion Bar */}
               <div
                 onClick={() => toggleExpand(q.id)}
-                className="p-5 flex items-start justify-between gap-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                className="p-5 flex items-start justify-between gap-4 cursor-pointer hover:bg-slate-850/50 transition-colors"
               >
                 <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="w-6 h-6 rounded-full bg-indigo-950 text-cyan-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 border border-indigo-800/60">
                     {idx + 1}
                   </span>
                   <div>
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       {getDifficultyBadge(q.difficulty)}
-                      <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                      <span className="text-[11px] font-semibold text-cyan-300 bg-cyan-950/80 border border-cyan-800/60 px-2 py-0.5 rounded-md">
                         {q.targetCompetency}
                       </span>
                       <span className="text-[11px] text-slate-400 font-medium">{q.category}</span>
                     </div>
-                    <h3 className="text-sm font-bold text-slate-900 leading-snug">{q.question}</h3>
+                    <h3 className="text-sm font-bold text-slate-100 leading-snug">{q.question}</h3>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
                   {currentScore > 0 && (
-                    <span className="bg-emerald-50 text-emerald-700 font-bold text-xs px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
-                      <Star className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" /> {currentScore}/5
+                    <span className="bg-emerald-950 text-emerald-300 font-bold text-xs px-2.5 py-1 rounded-full border border-emerald-800 flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-emerald-400 text-emerald-400" /> {currentScore}/5
                     </span>
                   )}
                   {isExpanded ? (
@@ -291,43 +291,43 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
 
               {/* Expanded Rubric & Scoring Body */}
               {isExpanded && (
-                <div className="px-5 pb-5 pt-2 border-t border-slate-100 bg-slate-50/30 space-y-4">
+                <div className="px-5 pb-5 pt-2 border-t border-slate-800 bg-slate-950/50 space-y-4">
                   {/* Context Objective */}
-                  <div className="p-3 bg-white rounded-lg border border-slate-200 text-xs">
-                    <span className="font-bold text-slate-700 block mb-0.5">🎯 Intent & Grounding Context:</span>
-                    <p className="text-slate-600 leading-relaxed">{q.context}</p>
+                  <div className="p-3.5 bg-slate-900 rounded-xl border border-slate-800 text-xs">
+                    <span className="font-bold text-cyan-300 block mb-0.5">🎯 Intent & Grounding Context:</span>
+                    <p className="text-slate-300 leading-relaxed">{q.context}</p>
                   </div>
 
                   {/* 3-Tier Rubric Guide */}
                   <div>
-                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                       Evaluation Rubric Criteria
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                       {/* Poor Signal */}
-                      <div className="p-3.5 rounded-lg bg-rose-50/60 border border-rose-200">
-                        <span className="font-bold text-rose-800 block mb-1">❌ Inadequate (1-2 pts)</span>
-                        <p className="text-rose-900 leading-relaxed text-[11px]">{q.evaluationRubric.poor}</p>
+                      <div className="p-3.5 rounded-xl bg-rose-950/30 border border-rose-900/60">
+                        <span className="font-bold text-rose-300 block mb-1">❌ Inadequate (1-2 pts)</span>
+                        <p className="text-rose-200 leading-relaxed text-[11px]">{q.evaluationRubric.poor}</p>
                       </div>
 
                       {/* Good Signal */}
-                      <div className="p-3.5 rounded-lg bg-blue-50/60 border border-blue-200">
-                        <span className="font-bold text-blue-800 block mb-1">⚡ Expected / Good (3-4 pts)</span>
-                        <p className="text-blue-900 leading-relaxed text-[11px]">{q.evaluationRubric.good}</p>
+                      <div className="p-3.5 rounded-xl bg-sky-950/30 border border-sky-900/60">
+                        <span className="font-bold text-sky-300 block mb-1">⚡ Expected / Good (3-4 pts)</span>
+                        <p className="text-sky-200 leading-relaxed text-[11px]">{q.evaluationRubric.good}</p>
                       </div>
 
                       {/* Exceptional Signal */}
-                      <div className="p-3.5 rounded-lg bg-emerald-50/60 border border-emerald-200">
-                        <span className="font-bold text-emerald-800 block mb-1">🌟 Exceptional / L6+ (5 pts)</span>
-                        <p className="text-emerald-900 leading-relaxed text-[11px]">{q.evaluationRubric.exceptional}</p>
+                      <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-900/60">
+                        <span className="font-bold text-emerald-300 block mb-1">🌟 Exceptional / L6+ (5 pts)</span>
+                        <p className="text-emerald-200 leading-relaxed text-[11px]">{q.evaluationRubric.exceptional}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Live Interviewer Score & Notes Panel */}
-                  <div className="p-4 bg-white rounded-lg border border-slate-200 space-y-3">
+                  <div className="p-4 bg-slate-900 rounded-xl border border-slate-800 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <span className="text-xs font-bold text-slate-800">Interviewer Score:</span>
+                      <span className="text-xs font-bold text-slate-200">Interviewer Score:</span>
                       <div className="flex items-center gap-1.5">
                         {[1, 2, 3, 4, 5].map(score => (
                           <button
@@ -335,8 +335,8 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
                             onClick={() => handleSetScore(q.id, score)}
                             className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                               currentScore === score
-                                ? 'bg-indigo-600 text-white shadow-2xs'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                ? 'bg-indigo-600 text-white shadow-2xs ring-2 ring-indigo-400'
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                             }`}
                           >
                             {score}
@@ -346,7 +346,7 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      <label className="block text-[11px] font-semibold text-slate-400 mb-1">
                         Live Response Notes & Observations:
                       </label>
                       <textarea
@@ -354,7 +354,7 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
                         onChange={(e) => handleSetNote(q.id, e.target.value)}
                         placeholder="Type verbatim observations, code architecture citations, or candidate explanations..."
                         rows={2}
-                        className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-xs p-2.5 bg-slate-950 text-slate-200 border border-slate-800 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                   </div>
@@ -366,26 +366,26 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
       </div>
 
       {/* Official Scorecard Submission Box */}
-      <div className="bg-white rounded-xl border border-indigo-200 p-6 shadow-xs space-y-4">
-        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-          <Award className="w-4 h-4 text-indigo-600" />
+      <div className="bg-slate-900 rounded-2xl border border-indigo-900/60 p-6 shadow-md space-y-4">
+        <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+          <Award className="w-4 h-4 text-cyan-400" />
           <span>Submit Official Panel Scorecard & Decision</span>
         </h3>
 
         {submitSuccessMessage && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <div className="p-3 bg-emerald-950 border border-emerald-800 text-emerald-300 rounded-xl text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span>{submitSuccessMessage}</span>
           </div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Interview Stage:</label>
+            <label className="block text-xs font-bold text-slate-300 mb-1">Interview Stage:</label>
             <select
               value={selectedStage}
               onChange={(e) => setSelectedStage(e.target.value as any)}
-              className="w-full text-xs border border-slate-300 rounded-lg p-2 font-medium"
+              className="w-full text-xs bg-slate-950 text-slate-200 border border-slate-800 rounded-xl p-2.5 font-medium focus:outline-hidden"
             >
               <option value="Initial Screen">Initial Screen</option>
               <option value="Technical Deep-Dive">Technical Deep-Dive</option>
@@ -395,11 +395,11 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Recommendation:</label>
+            <label className="block text-xs font-bold text-slate-300 mb-1">Recommendation:</label>
             <select
               value={overallRecommendation}
               onChange={(e) => setOverallRecommendation(e.target.value as any)}
-              className="w-full text-xs border border-slate-300 rounded-lg p-2 font-medium"
+              className="w-full text-xs bg-slate-950 text-slate-200 border border-slate-800 rounded-xl p-2.5 font-medium focus:outline-hidden"
             >
               <option value="Strong Hire">Strong Hire</option>
               <option value="Hire">Hire</option>
@@ -411,13 +411,13 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Committee Synthesis & Key Takeaways:</label>
+          <label className="block text-xs font-bold text-slate-300 mb-1">Committee Synthesis & Key Takeaways:</label>
           <textarea
             value={committeeNotes}
             onChange={(e) => setCommitteeNotes(e.target.value)}
             placeholder="Summarize candidate's technical depth, system trade-offs, cultural alignment, and areas for onboarding support..."
             rows={3}
-            className="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"
+            className="w-full text-xs bg-slate-950 text-slate-200 border border-slate-800 rounded-xl p-2.5 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
@@ -425,7 +425,7 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
           <button
             onClick={handleSubmitScorecard}
             disabled={isSubmittingRecord}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-xs cursor-pointer disabled:opacity-50"
           >
             <Send className="w-3.5 h-3.5" />
             <span>{isSubmittingRecord ? 'Saving Scorecard...' : 'Submit & Log Interview Scorecard'}</span>

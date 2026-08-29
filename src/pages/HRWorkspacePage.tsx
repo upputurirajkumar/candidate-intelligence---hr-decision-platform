@@ -53,6 +53,8 @@ interface HRWorkspacePageProps {
   onOpenIntake: () => void;
   onOpenIngestion: () => void;
   onOpenCopilot: () => void;
+  onOpenUniverse?: () => void;
+  onOpenAIProcessing?: (candName?: string) => void;
   onRefreshData: () => void;
   currentUser: User | null;
 }
@@ -69,6 +71,8 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
   onOpenIntake,
   onOpenIngestion,
   onOpenCopilot,
+  onOpenUniverse,
+  onOpenAIProcessing,
   onRefreshData,
   currentUser,
 }) => {
@@ -109,6 +113,7 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
                 onUpdateJob={onUpdateJob}
                 onJobCreated={onJobCreated}
                 onJobDeleted={onJobDeleted}
+                onOpenUniverse={onOpenUniverse}
               />
             )}
 
@@ -125,6 +130,17 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
 
           {/* Right: Intake & Ingest Actions */}
           <div className="flex items-center gap-2 shrink-0">
+            {onOpenUniverse && (
+              <button
+                onClick={onOpenUniverse}
+                className="hidden sm:flex items-center gap-1.5 bg-indigo-950/80 hover:bg-indigo-900/80 text-cyan-300 border border-indigo-700/60 px-3.5 py-1.8 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                title="Open 3D Role Universe & Requisition Topology"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span>3D Role Universe</span>
+              </button>
+            )}
+
             <button
               id="workspace-btn-intake"
               onClick={onOpenIntake}
@@ -334,7 +350,7 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-white">Interview Intelligence for {topCandidate.name}</h3>
-                <p className="text-xs text-slate-400">Active candidate for {selectedJob.title}</p>
+                <p className="text-xs text-slate-400">Active candidate for {selectedJob?.title || 'Target Role'}</p>
               </div>
               <button
                 onClick={() => onSelectCandidate(topCandidate.id)}

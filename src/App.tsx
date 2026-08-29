@@ -9,6 +9,9 @@ import { HRCopilotDrawer } from './components/HRCopilotDrawer';
 import { ResumeIngestionModal } from './components/ResumeIngestionModal';
 import { CandidateIntakeModal } from './components/CandidateIntakeModal';
 import { AuthModal } from './components/AuthModal';
+import { RoleUniverseModal } from './components/RoleUniverseModal';
+import { AIProcessingPipelineModal } from './components/AIProcessingPipelineModal';
+import { FuturisticBackground } from './components/FuturisticBackground';
 import { authenticatedFetch, getStoredToken, getStoredUser, clearAuthSession, setAuthSession } from './lib/api';
 
 export default function App() {
@@ -23,6 +26,9 @@ export default function App() {
   const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
   const [isIngestionOpen, setIsIngestionOpen] = useState<boolean>(false);
   const [isIntakeOpen, setIsIntakeOpen] = useState<boolean>(false);
+  const [isUniverseOpen, setIsUniverseOpen] = useState<boolean>(false);
+  const [isAIProcessingOpen, setIsAIProcessingOpen] = useState<boolean>(false);
+  const [processingCandidateName, setProcessingCandidateName] = useState<string>('Candidate Pipeline');
   const [loadingData, setLoadingData] = useState<boolean>(false);
 
   // Sync route with browser window path / history
@@ -234,7 +240,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-slate-950 relative">
+      {/* Ambient Futuristic Background Visuals */}
+      <FuturisticBackground />
+
       {/* Global Navigation Bar */}
       <GlobalNavbar
         currentRoute={currentRoute}
@@ -243,11 +252,12 @@ export default function App() {
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
         onOpenCopilot={() => setIsCopilotOpen(true)}
+        onOpenUniverse={() => setIsUniverseOpen(true)}
         selectedJob={selectedJob}
       />
 
       {/* Page Routing Switcher */}
-      <div className="flex-1 w-full">
+      <div className="flex-1 w-full relative z-10">
         {currentRoute === 'home' && (
           <LandingPage
             onExplorePlatform={() => handleNavigate('platform')}
@@ -282,6 +292,11 @@ export default function App() {
             onOpenIntake={() => setIsIntakeOpen(true)}
             onOpenIngestion={() => setIsIngestionOpen(true)}
             onOpenCopilot={() => setIsCopilotOpen(true)}
+            onOpenUniverse={() => setIsUniverseOpen(true)}
+            onOpenAIProcessing={(candName) => {
+              setProcessingCandidateName(candName || 'Candidate Processing Engine');
+              setIsAIProcessingOpen(true);
+            }}
             onRefreshData={loadPlatformData}
             currentUser={currentUser}
           />
@@ -329,7 +344,11 @@ export default function App() {
         onClose={() => setIsIntakeOpen(false)}
         jobs={jobs}
         selectedJobId={selectedJob?.id || ''}
-        onCandidateCreated={handleCandidateAdded}
+        onCandidateCreated={(newCand) => {
+          handleCandidateAdded(newCand);
+          setProcessingCandidateName(newCand.name);
+          setIsAIProcessingOpen(true);
+        }}
       />
 
       {/* Resume Ingestion Modal */}
@@ -338,7 +357,45 @@ export default function App() {
         onClose={() => setIsIngestionOpen(false)}
         jobs={jobs}
         selectedJobId={selectedJob?.id || ''}
-        onCandidateAdded={handleCandidateAdded}
+        onCandidateAdded={(newCand) => {
+          handleCandidateAdded(newCand);
+          setProcessingCandidateName(newCand.name);
+          setIsAIProcessingOpen(true);
+        }}
+      />
+
+      {/* 30+ Role Universe Modal */}
+      <RoleUniverseModal
+        isOpen={isUniverseOpen}
+        onClose={() => setIsUniverseOpen(false)}
+        selectedJob={selectedJob}
+        jobs={jobs}
+        candidates={candidates}
+        onSelectRole={(job) => {
+          setSelectedJob(job);
+          setIsUniverseOpen(false);
+          handleNavigate('platform');
+        }}
+        onSelectJob={(job) => {
+          setSelectedJob(job);
+          setIsUniverseOpen(false);
+          handleNavigate('platform');
+        }}
+        onSelectCandidate={(candId) => {
+          setIsUniverseOpen(false);
+          handleSelectCandidate(candId);
+        }}
+      />
+
+      {/* AI Processing Pipeline Audit Modal */}
+      <AIProcessingPipelineModal
+        isOpen={isAIProcessingOpen}
+        onClose={() => setIsAIProcessingOpen(false)}
+        candidateName={processingCandidateName}
+        onComplete={() => {
+          // Keep active view refreshed
+          loadPlatformData();
+        }}
       />
 
       {/* Authentication Modal */}

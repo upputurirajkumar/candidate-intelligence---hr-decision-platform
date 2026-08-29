@@ -156,15 +156,15 @@ export const EntityGraphView: React.FC<EntityGraphViewProps> = ({ candidate }) =
   return (
     <div id="entity-graph-container" className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="bg-slate-900/90 rounded-2xl border border-slate-800/80 p-6 shadow-md backdrop-blur-xl">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+            <div className="p-2.5 bg-indigo-950/80 text-cyan-400 border border-indigo-800/60 rounded-xl">
               <Layers className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Entity Knowledge Graph & Verification Mesh</h2>
-              <p className="text-xs text-slate-500">
+              <h2 className="text-lg font-bold text-slate-100">Entity Knowledge Graph & Verification Mesh</h2>
+              <p className="text-xs text-slate-400">
                 Interactive network representation connecting credentials, companies, technologies, and verified proofs
               </p>
             </div>
@@ -176,7 +176,7 @@ export const EntityGraphView: React.FC<EntityGraphViewProps> = ({ candidate }) =
               aria-label="Filter Graph Entities"
               value={selectedNodeType}
               onChange={(e) => setSelectedNodeType(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-slate-700 font-medium focus:outline-hidden cursor-pointer"
+              className="text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200 font-medium focus:outline-hidden cursor-pointer"
             >
               <option value="all">All Entity Types</option>
               <option value="company">Companies & Tenures</option>
@@ -185,24 +185,24 @@ export const EntityGraphView: React.FC<EntityGraphViewProps> = ({ candidate }) =
               <option value="project">Claims & Artifacts</option>
             </select>
 
-            <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
+            <div className="flex items-center border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
               <button
                 onClick={() => setZoomLevel(prev => Math.min(prev + 0.15, 1.6))}
-                className="p-1.5 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-slate-200 cursor-pointer"
                 title="Zoom In"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setZoomLevel(1)}
-                className="p-1.5 hover:bg-slate-200 text-slate-600 border-x border-slate-200 cursor-pointer"
+                className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border-x border-slate-800 cursor-pointer"
                 title="Reset Zoom"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setZoomLevel(prev => Math.max(prev - 0.15, 0.7))}
-                className="p-1.5 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-slate-200 cursor-pointer"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-4 h-4" />
@@ -213,27 +213,27 @@ export const EntityGraphView: React.FC<EntityGraphViewProps> = ({ candidate }) =
 
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-4 text-xs mt-4">
-          <span className="flex items-center gap-1.5 text-indigo-700 font-medium">
-            <span className="w-3 h-3 rounded-full bg-indigo-600"></span> Candidate Root
+          <span className="flex items-center gap-1.5 text-indigo-400 font-medium">
+            <span className="w-3 h-3 rounded-full bg-indigo-500 ring-2 ring-indigo-950"></span> Candidate Root
           </span>
-          <span className="flex items-center gap-1.5 text-sky-700 font-medium">
-            <span className="w-3 h-3 rounded-full bg-sky-600"></span> Company Tenure
+          <span className="flex items-center gap-1.5 text-sky-400 font-medium">
+            <span className="w-3 h-3 rounded-full bg-sky-500 ring-2 ring-sky-950"></span> Company Tenure
           </span>
-          <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
-            <span className="w-3 h-3 rounded-full bg-emerald-500"></span> Technical Skill
+          <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
+            <span className="w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-emerald-950"></span> Technical Skill
           </span>
-          <span className="flex items-center gap-1.5 text-violet-700 font-medium">
-            <span className="w-3 h-3 rounded-full bg-violet-500"></span> Education
+          <span className="flex items-center gap-1.5 text-violet-400 font-medium">
+            <span className="w-3 h-3 rounded-full bg-violet-500 ring-2 ring-violet-950"></span> Education
           </span>
-          <span className="flex items-center gap-1.5 text-amber-700 font-medium">
-            <span className="w-3 h-3 rounded-full bg-amber-500"></span> Grounded Claims
+          <span className="flex items-center gap-1.5 text-amber-400 font-medium">
+            <span className="w-3 h-3 rounded-full bg-amber-500 ring-2 ring-amber-950"></span> Grounded Claims
           </span>
         </div>
       </div>
 
       {/* SVG Canvas & Node Detail Inspector */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center justify-center overflow-hidden min-h-[480px]">
+        <div className="lg:col-span-8 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-md flex items-center justify-center overflow-hidden min-h-[480px]">
           <div
             className="w-full flex justify-center transition-transform duration-200"
             style={{ transform: `scale(${zoomLevel})` }}
@@ -252,7 +252,7 @@ export const EntityGraphView: React.FC<EntityGraphViewProps> = ({ candidate }) =
                       y1={sourcePos.y}
                       x2={targetPos.x}
                       y2={targetPos.y}
-                      stroke={link.verified ? '#cbd5e1' : '#fcd34d'}
+                      stroke={link.verified ? '#334155' : '#78350f'}
                       strokeWidth={link.verified ? 1.5 : 2}
                       strokeDasharray={link.verified ? 'none' : '4 4'}
                     />
@@ -277,15 +277,15 @@ export const EntityGraphView: React.FC<EntityGraphViewProps> = ({ candidate }) =
                       cy={pos.y}
                       r={node.val}
                       fill={node.color}
-                      stroke={isSelected ? '#0f172a' : '#ffffff'}
+                      stroke={isSelected ? '#38bdf8' : '#0f172a'}
                       strokeWidth={isSelected ? 3 : 2}
-                      className="shadow-xs"
+                      className="shadow-md"
                     />
                     <text
                       x={pos.x}
                       y={pos.y + node.val + 12}
                       textAnchor="middle"
-                      fill="#334155"
+                      fill="#94a3b8"
                       fontSize={node.type === 'candidate' ? 12 : 10}
                       fontWeight={node.type === 'candidate' ? 'bold' : 'normal'}
                     >
@@ -299,45 +299,45 @@ export const EntityGraphView: React.FC<EntityGraphViewProps> = ({ candidate }) =
         </div>
 
         {/* Right Column: Node Details Inspector */}
-        <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Info className="w-4 h-4 text-indigo-600" />
+        <div className="lg:col-span-4 bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-md space-y-4">
+          <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <Info className="w-4 h-4 text-cyan-400" />
             Entity Inspector
           </h3>
 
           {activeNode ? (
-            <div className="space-y-4 p-4 rounded-lg bg-slate-50 border border-slate-200">
+            <div className="space-y-4 p-4 rounded-xl bg-slate-950 border border-slate-800">
               <div className="flex items-center gap-2">
                 <span
                   className="w-3.5 h-3.5 rounded-full"
                   style={{ backgroundColor: activeNode.color }}
                 ></span>
-                <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">
+                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">
                   {activeNode.type}
                 </span>
               </div>
 
-              <h4 className="text-base font-bold text-slate-900">{activeNode.label}</h4>
+              <h4 className="text-base font-bold text-slate-100">{activeNode.label}</h4>
 
-              <div className="text-xs text-slate-600 space-y-2">
+              <div className="text-xs text-slate-300 space-y-2">
                 <div>
-                  <span className="font-semibold text-slate-800">Direct Relationships:</span>{' '}
-                  {links.filter(l => l.source === activeNode.id || l.target === activeNode.id).length} edges
+                  <span className="font-semibold text-slate-400">Direct Relationships:</span>{' '}
+                  <span className="font-mono text-cyan-300">{links.filter(l => l.source === activeNode.id || l.target === activeNode.id).length} edges</span>
                 </div>
                 <div>
-                  <span className="font-semibold text-slate-800">Verification Status:</span>{' '}
-                  <span className="text-emerald-700 font-medium">Grounded & Verified</span>
+                  <span className="font-semibold text-slate-400">Verification Status:</span>{' '}
+                  <span className="text-emerald-400 font-medium">Grounded & Verified</span>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-12 px-4 text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg">
+            <div className="text-center py-12 px-4 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
               Click any node in the graph to inspect entity attributes, source links, and verification provenance.
             </div>
           )}
 
-          <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 text-xs text-indigo-950">
-            <span className="font-bold block mb-1">Knowledge Mesh Insights:</span>
+          <div className="p-3.5 bg-indigo-950/40 rounded-xl border border-indigo-900/60 text-xs text-indigo-200">
+            <span className="font-bold text-cyan-300 block mb-1">Knowledge Mesh Insights:</span>
             Graph correlates cross-company stack transitions to identify deep expertise consistency vs. transient buzzwords.
           </div>
         </div>

@@ -33,7 +33,7 @@ export type AppNavTab =
 
 interface CandidateHeaderProps {
   candidate: Candidate;
-  job: JobProfile;
+  job?: JobProfile | null;
   activeTab: AppNavTab;
   onTabChange: (tab: AppNavTab) => void;
   onOpenCopilot: () => void;
@@ -168,8 +168,8 @@ export const CandidateHeader: React.FC<CandidateHeaderProps> = ({
               </div>
               <div>
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Role Fit Index</div>
-                <div className="text-xs font-bold text-slate-800 truncate max-w-[140px]" title={job.title}>
-                  {job.title}
+                <div className="text-xs font-bold text-slate-800 truncate max-w-[140px]" title={job?.title || 'Target Requisition'}>
+                  {job?.title || 'Target Requisition'}
                 </div>
               </div>
             </div>
