@@ -30,18 +30,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <div className="bg-slate-950 text-slate-100 min-h-screen selection:bg-cyan-500 selection:text-slate-950">
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-28 border-b border-slate-800/60">
-        {/* Glow Background Blurs */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-indigo-600/15 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden pt-12 pb-16 lg:pt-18 lg:pb-24 border-b border-slate-800/60">
+        {/* Ambient Radial Gradient */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-indigo-600/15 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             {/* Left Copy Column */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               {/* Trust Pill */}
-              <div className="inline-flex items-center gap-2 bg-indigo-950/80 border border-indigo-700/60 px-3.5 py-1.5 rounded-full text-xs font-mono text-cyan-300 backdrop-blur-md shadow-lg">
+              <div className="inline-flex items-center gap-2 bg-indigo-950/80 border border-indigo-700/60 px-3.5 py-1.5 rounded-full text-xs font-mono text-cyan-300 backdrop-blur-md shadow-md">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Next-Gen Candidate Verification & Intelligence</span>
+                <span>Evidence-Grounded Candidate Intelligence</span>
               </div>
 
               {/* Main Headline */}
@@ -54,7 +54,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               {/* Supporting Subheadline */}
               <p className="text-base sm:text-lg text-slate-300 font-sans leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                AI-powered candidate intelligence using evidence from resumes, GitHub, LinkedIn, portfolios, and official registries. Eliminate resume embellishment with multi-source factual corroboration.
+                AI connects candidate information from multiple sources, cross-checks available evidence, identifies potential inconsistencies, evaluates role alignment, and helps HR make better-informed decisions.
               </p>
 
               {/* Primary & Secondary Action CTAs */}
@@ -78,19 +78,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </button>
               </div>
 
-              {/* Quick Proof Metrics */}
+              {/* Legitimate Product Capability Highlights (No Invented Stats) */}
               <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-800/80 max-w-lg mx-auto lg:mx-0 text-left">
                 <div>
-                  <div className="text-2xl font-black text-white font-mono">94%</div>
-                  <div className="text-[11px] text-slate-400 font-medium">Factual Grounding</div>
+                  <div className="text-2xl font-black text-white font-mono">5</div>
+                  <div className="text-[11px] text-slate-400 font-medium">Grounded Sources</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-cyan-400 font-mono">0.0%</div>
-                  <div className="text-[11px] text-slate-400 font-medium">AI Hallucination Drift</div>
+                  <div className="text-2xl font-black text-cyan-400 font-mono">30+</div>
+                  <div className="text-[11px] text-slate-400 font-medium">Supported Roles</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-indigo-400 font-mono">65%</div>
-                  <div className="text-[11px] text-slate-400 font-medium">Faster Screening</div>
+                  <div className="text-sm font-bold text-indigo-300 font-sans leading-tight">Multi-Source</div>
+                  <div className="text-[11px] text-slate-400 font-medium">Evidence Analysis</div>
                 </div>
               </div>
             </div>
@@ -103,23 +103,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* The Problem with Traditional Resumes */}
+      {/* The Dilemma with Unverified Resumes */}
       <section className="py-20 bg-slate-900/40 border-b border-slate-800/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
             <span className="text-xs font-mono uppercase tracking-wider text-rose-400 bg-rose-950/60 border border-rose-800/60 px-3 py-1 rounded-full">
-              The Hiring Dilemma
+              Hiring Evaluation
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
-              70% of resumes contain exaggerated or unverifiable claims.
+              Resumes alone cannot verify practical execution.
             </h2>
             <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-              Traditional applicant tracking systems blindly index keywords without verifying whether a candidate actually designed the architecture or merely sat in the meeting.
+              Traditional keyword filters match surface text without verifying whether self-reported achievements match actual code repositories, career timelines, and certified credentials.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Legacy Resume Pitfall */}
+            {/* Unverified Resume Review */}
             <div className="bg-slate-900/80 border border-rose-900/30 rounded-3xl p-8 space-y-4 relative overflow-hidden">
               <div className="w-10 h-10 rounded-xl bg-rose-950/80 text-rose-400 border border-rose-800/60 flex items-center justify-center font-bold">
                 <AlertTriangle className="w-5 h-5" />
@@ -128,15 +128,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <ul className="space-y-2.5 text-xs sm:text-sm text-slate-400">
                 <li className="flex items-start gap-2">
                   <span className="text-rose-400 font-bold">✕</span>
-                  <span><strong>Uncorroborated Claims:</strong> Self-authored resumes treated as ground truth without proof.</span>
+                  <span><strong>Uncorroborated Claims:</strong> Self-authored summaries treated as fact without proof.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-rose-400 font-bold">✕</span>
-                  <span><strong>AI Keyword Stuffing:</strong> Candidates pass ATS filters with synthetic prompt-generated resumes.</span>
+                  <span><strong>Keyword Inconsistencies:</strong> ATS filters pass surface text without verifying technical depth.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-rose-400 font-bold">✕</span>
-                  <span><strong>Blind Interview Prep:</strong> Interviewers ask generic questions instead of probing actual risk areas.</span>
+                  <span><strong>Generic Interview Prep:</strong> Interviewers ask standard questions instead of exploring concrete evidence.</span>
                 </li>
               </ul>
             </div>
@@ -150,15 +150,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <ul className="space-y-2.5 text-xs sm:text-sm text-slate-300">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span><strong>Multi-Modal Cross-Checking:</strong> Corroborates claims against GitHub commits, LinkedIn tenure, and certifications.</span>
+                  <span><strong>Multi-Source Corroboration:</strong> Cross-checks claims against code repos, career tenure, and verified credentials.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span><strong>Autonomous Multi-Agent Audit:</strong> Technical, Experience, Integrity, and Culture agents inspect with zero hallucinations.</span>
+                  <span><strong>Multi-Agent Domain Review:</strong> Specialized agents evaluate technical depth, continuity, and collaboration.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span><strong>Targeted Interview Intelligence:</strong> Auto-generates exact probing questions with expected candidate answers.</span>
+                  <span><strong>Targeted Interview Protocols:</strong> Generates probing questions grounded in verified candidate artifacts.</span>
                 </li>
               </ul>
             </div>
@@ -177,7 +177,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               A unified command center for precision hiring.
             </h2>
             <p className="text-slate-400 text-sm sm:text-base">
-              Everything hiring managers and talent leads need to evaluate candidates objectively with complete provenance.
+              Everything talent teams and hiring managers need to evaluate candidate profiles with complete evidence provenance.
             </p>
           </div>
 
@@ -187,9 +187,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="p-3 bg-indigo-950/80 text-indigo-400 rounded-2xl w-fit border border-indigo-800/60">
                 <Cpu className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-white">Multi-Agent Autonomous Orchestration</h3>
+              <h3 className="text-base font-bold text-white">Multi-Agent Review System</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                4 specialized agents run isolated evaluations across code repositories, career continuity, integrity signals, and soft skills with full reasoning traces.
+                Specialized agents run structured evaluations across code repositories, career continuity, integrity signals, and soft skills with reasoning traces.
               </p>
             </div>
 
@@ -198,9 +198,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="p-3 bg-cyan-950/80 text-cyan-400 rounded-2xl w-fit border border-cyan-800/60">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-white">Verifiable Evidence Fact-Checker</h3>
+              <h3 className="text-base font-bold text-white">Verifiable Evidence Fact-Checking</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Audits every claim with confidence scores and evidence citations. Flags timeline conflicts and corroborates GitHub PRs and registry credentials.
+                Inspects claims with confidence metrics and evidence citations. Highlights timeline conflicts and corroborates code commits and registry credentials.
               </p>
             </div>
 
@@ -209,9 +209,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="p-3 bg-emerald-950/80 text-emerald-400 rounded-2xl w-fit border border-emerald-800/60">
                 <BarChart3 className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-white">Explainable Fit Scoring</h3>
+              <h3 className="text-base font-bold text-white">Explainable Role Match Scoring</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Transparent match formulas weighting required skills, architectural depth, and evidence grounding with custom departmental weighting bars.
+                Transparent match formulas weighting required skills, architectural depth, and evidence grounding with customizable weighting bars.
               </p>
             </div>
 
@@ -220,9 +220,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="p-3 bg-purple-950/80 text-purple-400 rounded-2xl w-fit border border-purple-800/60">
                 <HelpCircle className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-white">Live Interview Intelligence</h3>
+              <h3 className="text-base font-bold text-white">Structured Interview Intelligence</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Automated probing question protocols with rubric criteria, live structured scoring pads, and multi-round synthesis feedback.
+                Targeted probing question protocols with rubric criteria, live structured scoring pads, and multi-round synthesis feedback.
               </p>
             </div>
 
@@ -231,9 +231,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="p-3 bg-amber-950/80 text-amber-400 rounded-2xl w-fit border border-amber-800/60">
                 <Layers className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-white">Comparison Matrix & Leaderboard</h3>
+              <h3 className="text-base font-bold text-white">Candidate Comparison & Rankings</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Compare top candidates across required skill tables, evidence ratings, and compensation fit with automated top-pick hiring verdicts.
+                Compare candidates across required skill matrices, evidence ratings, and compensation fit for balanced hiring decisions.
               </p>
             </div>
 
@@ -261,10 +261,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span>Enterprise Security & Multi-Tenant Isolation</span>
               </div>
               <h3 className="text-xl sm:text-2xl font-bold text-white">
-                Built with zero-trust prompt injection defense and strict data residency.
+                Built with zero-trust input validation and strict data isolation.
               </h3>
               <p className="text-xs text-slate-400">
-                Untrusted candidate resumes are sealed in non-executable sandboxes before analysis. Scrypt cryptographic password hashing, role-based access control, and full organizational tenant isolation.
+                Candidate inputs are validated in isolated environments. Role-based access control, cryptographic authentication, and enterprise organization data boundaries.
               </p>
             </div>
 
@@ -282,10 +282,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="py-24 relative overflow-hidden">
         <div className="max-w-5xl mx-auto px-4 text-center space-y-6 relative z-10">
           <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            Ready to upgrade your talent decisions with verified intelligence?
+            Ready to enhance candidate evaluations with grounded intelligence?
           </h2>
           <p className="text-slate-300 text-base max-w-xl mx-auto font-sans">
-            Launch the workspace to explore pre-seeded candidates, ingest new resumes, or test autonomous agent fact-checking.
+            Launch the workspace to explore candidate profiles, connect evidence sources, or evaluate role alignment.
           </p>
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button

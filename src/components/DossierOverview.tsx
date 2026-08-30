@@ -116,7 +116,7 @@ ${(candidate?.claims || []).map(c => `- [${(c?.status || 'verified').toUpperCase
               <Sparkles className="w-5 h-5 text-amber-400" />
             </span>
             <div>
-              <h2 className="text-lg font-bold text-slate-100">Autonomous Intelligence Synthesis</h2>
+              <h2 className="text-lg font-bold text-slate-100">Executive Summary & Intelligence</h2>
               <p className="text-xs text-slate-400">Evaluated against {job?.title || 'Target Role'} rubric</p>
             </div>
           </div>
@@ -136,7 +136,7 @@ ${(candidate?.claims || []).map(c => `- [${(c?.status || 'verified').toUpperCase
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-cyan-300 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-800 rounded-xl transition-colors cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Deep-Dive Copilot</span>
+              <span>Ask HR Copilot</span>
             </button>
           </div>
         </div>
@@ -150,7 +150,7 @@ ${(candidate?.claims || []).map(c => `- [${(c?.status || 'verified').toUpperCase
           <div className="bg-emerald-950/30 border border-emerald-900/60 rounded-xl p-4">
             <h3 className="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              Key Proven Strengths
+              Key Strengths
             </h3>
             <ul className="space-y-1.5">
               {candidate.keyStrengths.map((str, idx) => (
@@ -165,7 +165,7 @@ ${(candidate?.claims || []).map(c => `- [${(c?.status || 'verified').toUpperCase
           <div className="bg-amber-950/30 border border-amber-900/60 rounded-xl p-4">
             <h3 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
               <AlertTriangle className="w-4 h-4 text-amber-400" />
-              Potential Risks & Verification Gaps
+              Areas to Probe & Gaps
             </h3>
             <ul className="space-y-1.5">
               {candidate.potentialRisks.map((risk, idx) => (
@@ -183,7 +183,7 @@ ${(candidate?.claims || []).map(c => `- [${(c?.status || 'verified').toUpperCase
       <AnimatedMatchScore
         score={candidate.overallFitScore}
         explainable={explainable}
-        label={`Requisition Fit for ${job?.title || 'Target Role'}`}
+        label={`Role Match for ${job?.title || 'Target Role'}`}
       />
 
       {/* Multi-Dimensional Candidate Intelligence Visualizer */}

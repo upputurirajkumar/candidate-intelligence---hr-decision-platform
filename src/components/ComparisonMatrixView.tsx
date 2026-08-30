@@ -120,9 +120,9 @@ export const ComparisonMatrixView: React.FC<ComparisonMatrixViewProps> = ({
               <BarChart3 className="w-6 h-6 text-cyan-400" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-100">Side-by-Side Candidate Decision Matrix</h2>
+              <h2 className="text-lg font-bold text-slate-100">Candidate Comparison Matrix</h2>
               <p className="text-xs text-slate-400">
-                Multi-candidate evaluation calibrated against <span className="font-semibold text-slate-200">{job?.title || 'Target Requisition'}</span> requirements
+                Multi-candidate evaluation calibrated against <span className="font-semibold text-slate-200">{job?.title || 'Target Role'}</span> requirements
               </p>
             </div>
           </div>
@@ -132,7 +132,7 @@ export const ComparisonMatrixView: React.FC<ComparisonMatrixViewProps> = ({
             className="flex items-center gap-1.5 text-xs font-semibold text-cyan-300 bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-800/80 px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Generate Copilot Trade-Off Synthesis</span>
+            <span>Ask HR Copilot to Compare</span>
           </button>
         </div>
 
@@ -173,7 +173,7 @@ export const ComparisonMatrixView: React.FC<ComparisonMatrixViewProps> = ({
               <img src={winners.bestSkill.avatarUrl} alt={winners.bestSkill.name} className="w-8 h-8 rounded-lg object-cover border border-slate-700" />
               <div>
                 <div className="text-xs font-bold text-slate-100">{winners.bestSkill.name}</div>
-                <div className="text-[11px] text-cyan-300 font-mono font-semibold">{winners.bestSkill.overallFitScore}% Overall Fit</div>
+                <div className="text-[11px] text-cyan-300 font-mono font-semibold">{winners.bestSkill.overallFitScore}% Role Match</div>
               </div>
             </div>
             <p className="text-[11px] text-slate-400 leading-relaxed">
@@ -209,7 +209,7 @@ export const ComparisonMatrixView: React.FC<ComparisonMatrixViewProps> = ({
               <img src={winners.bestEvidence.avatarUrl} alt={winners.bestEvidence.name} className="w-8 h-8 rounded-lg object-cover border border-slate-700" />
               <div>
                 <div className="text-xs font-bold text-slate-100">{winners.bestEvidence.name}</div>
-                <div className="text-[11px] text-amber-300 font-mono font-semibold">{winners.bestEvidence.verificationRating}% Fact-Checked</div>
+                <div className="text-[11px] text-amber-300 font-mono font-semibold">{winners.bestEvidence.verificationRating}% Verified Grounding</div>
               </div>
             </div>
             <p className="text-[11px] text-slate-400 leading-relaxed">
@@ -325,7 +325,7 @@ export const ComparisonMatrixView: React.FC<ComparisonMatrixViewProps> = ({
             <tbody className="divide-y divide-slate-800/60">
               {/* Overall Fit Score */}
               <tr className="hover:bg-slate-800/30">
-                <td className="p-4 font-bold text-slate-300 w-48">Overall Role Fit</td>
+                <td className="p-4 font-bold text-slate-300 w-48">Overall Role Match</td>
                 {comparedCandidates.map(cand => (
                   <td key={cand.id} className="p-4 font-bold text-slate-100">
                     <span className="text-sm font-extrabold text-cyan-300 font-mono">{cand.overallFitScore}%</span>
@@ -397,7 +397,7 @@ export const ComparisonMatrixView: React.FC<ComparisonMatrixViewProps> = ({
                       }}
                       className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 cursor-pointer"
                     >
-                      <span>Open {cand.name.split(' ')[0]}'s Dossier</span>
+                      <span>View {cand.name.split(' ')[0]}'s Profile</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </td>

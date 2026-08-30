@@ -354,12 +354,12 @@ Key Technical Skills: TypeScript, Go, Distributed Systems, Cloud Architecture, K
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-100">Candidate Source Intake & Intelligence Engine</h2>
+                <h2 className="text-base font-bold text-slate-100">Add Candidate</h2>
                 <span className="bg-indigo-950 text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-800 font-mono">
                   5-Step Pipeline
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Multi-source verification, claim extraction, and grounded evidence indexing</p>
+              <p className="text-xs text-slate-400">Add candidate profile and connect multi-source evidence for role evaluation</p>
             </div>
           </div>
 
@@ -376,10 +376,10 @@ Key Technical Skills: TypeScript, Go, Distributed Systems, Cloud Architecture, K
           <div className="flex items-center justify-between max-w-3xl mx-auto overflow-x-auto gap-2">
             {[
               { key: 'basic_info', label: '1. Basic Info' },
-              { key: 'sources', label: '2. Candidate Sources' },
+              { key: 'sources', label: '2. Evidence Sources' },
               { key: 'processing', label: '3. Source Processing' },
               { key: 'evidence_review', label: '4. Evidence Review' },
-              { key: 'analysis_complete', label: '5. AI Analysis' },
+              { key: 'analysis_complete', label: '5. Role Match Analysis' },
             ].map((step, idx) => {
               const stepKeys: IntakeStep[] = ['basic_info', 'sources', 'processing', 'evidence_review', 'analysis_complete'];
               const currentIdx = stepKeys.indexOf(currentStep);

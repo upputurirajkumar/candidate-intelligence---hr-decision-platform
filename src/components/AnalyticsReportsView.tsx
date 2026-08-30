@@ -125,9 +125,9 @@ export const AnalyticsReportsView: React.FC<AnalyticsReportsViewProps> = ({
             <BarChart2 className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Talent Intelligence & Pipeline Analytics</h2>
+            <h2 className="text-lg font-bold text-slate-900">Pipeline Analytics & Reports</h2>
             <p className="text-xs text-slate-500">
-              Live funnel velocity, source attribution distribution, and structured report exports
+              Hiring funnel progression, verification breakdown, and structured export formats
             </p>
           </div>
         </div>
@@ -150,7 +150,7 @@ export const AnalyticsReportsView: React.FC<AnalyticsReportsViewProps> = ({
           </button>
           <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Print Report</span>
@@ -162,46 +162,46 @@ export const AnalyticsReportsView: React.FC<AnalyticsReportsViewProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Total Evaluated Candidates</span>
+            <span>Evaluated Candidates</span>
             <Users className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-black text-slate-900 font-mono">
             {analytics?.totalCandidates || candidates.length}
           </div>
           <div className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> Across {jobs.length} Active Job Profiles
+            <TrendingUp className="w-3 h-3" /> Across {jobs.length} Active Roles
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Overall Factual Grounding</span>
+            <span>Evidence Grounding Rate</span>
             <ShieldCheck className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-black text-emerald-700 font-mono">
             {activeCandidate?.verificationRating || 92}%
           </div>
-          <div className="text-[11px] text-slate-500">Zero uncorroborated assertions</div>
+          <div className="text-[11px] text-slate-500">Verified evidence-backed profile</div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Avg Pipeline Velocity</span>
+            <span>Avg. Time to Evaluate</span>
             <Calendar className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-black text-slate-900 font-mono">
             {analytics?.avgTimeToEvaluateDays || 4.2} <span className="text-xs font-normal text-slate-400">days</span>
           </div>
-          <div className="text-[11px] text-emerald-600 font-semibold">65% faster screening velocity</div>
+          <div className="text-[11px] text-emerald-600 font-semibold">Accelerated evaluation cycle</div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Active Target Requisition</span>
+            <span>Active Role</span>
             <Briefcase className="w-4 h-4 text-indigo-500" />
           </div>
-          <div className="text-sm font-bold text-slate-900 truncate" title={selectedJob?.title || 'Target Requisition'}>
-            {selectedJob?.title || 'Target Requisition'}
+          <div className="text-sm font-bold text-slate-900 truncate" title={selectedJob?.title || 'Target Role'}>
+            {selectedJob?.title || 'Target Role'}
           </div>
           <div className="text-[11px] text-indigo-600 font-mono">{selectedJob?.salaryRange || '$180,000 - $240,000'}</div>
         </div>
@@ -213,7 +213,7 @@ export const AnalyticsReportsView: React.FC<AnalyticsReportsViewProps> = ({
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <Layers className="w-4 h-4 text-indigo-600" />
-            <span>Recruiting Pipeline Funnel Conversion</span>
+            <span>Hiring Pipeline Funnel</span>
           </h3>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -232,7 +232,7 @@ export const AnalyticsReportsView: React.FC<AnalyticsReportsViewProps> = ({
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Candidate Claims Verification Health</span>
+            <span>Verification Breakdown</span>
           </h3>
           <div className="h-64 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">

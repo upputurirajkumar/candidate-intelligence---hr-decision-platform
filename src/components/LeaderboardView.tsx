@@ -211,13 +211,13 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                Candidate Ranking Leaderboard
+                Top Matches
                 <span className="text-xs bg-indigo-950 text-cyan-300 border border-indigo-800 px-2.5 py-0.5 rounded-full font-mono font-semibold">
                   {filteredRanked.length} Candidates
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                Job Requisition: <span className="font-semibold text-slate-200">{job?.title || 'Target Role'}</span> ({job?.department || 'General'})
+                Candidates ranked for selected role: <span className="font-semibold text-slate-200">{job?.title || 'Target Role'}</span> ({job?.department || 'General'})
               </p>
             </div>
           </div>
@@ -226,7 +226,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
         {/* Explainability Formula Pill */}
         <div className="flex flex-wrap items-center gap-2 text-[11px] bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl text-slate-400 font-mono">
           <Info className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Formula: 40% Required Skills + 25% Experience + 20% Grounded Evidence + 15% Verified Projects</span>
+          <span>Decision-Support Formula: 40% Required Skills + 25% Experience + 20% Evidence Strength + 15% Verified Projects</span>
         </div>
       </div>
 
@@ -448,15 +448,15 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                   <div className="flex flex-wrap items-center gap-3 lg:justify-end">
                     {/* Required Skills Match Score */}
                     <div className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-center">
-                      <div className="text-[10px] uppercase font-bold text-slate-400">Required Skills</div>
+                      <div className="text-[10px] uppercase font-bold text-slate-400">Skill Match</div>
                       <div className="text-xs font-bold text-cyan-300 font-mono">
                         {cand.requiredSkillsScore}%
                       </div>
                     </div>
 
-                    {/* Overall Dynamic Match Score */}
+                    {/* Overall Role Match Score */}
                     <div className="bg-indigo-950/80 border border-indigo-800/80 rounded-xl px-4 py-2 text-center">
-                      <div className="text-[10px] uppercase font-bold text-indigo-300">Dynamic Match</div>
+                      <div className="text-[10px] uppercase font-bold text-indigo-300">Role Match</div>
                       <div className="text-base font-extrabold text-cyan-300 font-mono">
                         {cand.dynamicMatchScore}%
                       </div>

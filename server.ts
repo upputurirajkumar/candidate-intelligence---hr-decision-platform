@@ -1,16 +1,22 @@
 import express from 'express';
+import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { apiRouter } from './server/routes/api';
 import { generalApiRateLimiter } from './server/middleware/rateLimit';
+import { setupLiveVoiceServer } from './server/services/liveVoiceService';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
+  const server = http.createServer(app);
   const PORT = 3000;
+
+  // Initialize Gemini Live Voice WebSocket handler
+  setupLiveVoiceServer(server);
 
   // Disable server identification header
   app.disable('x-powered-by');
@@ -21,7 +27,7 @@ async function startServer() {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=()');
     next();
   });
 
@@ -63,7 +69,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Candidate Intelligence Server running on http://localhost:${PORT}`);
   });
 }

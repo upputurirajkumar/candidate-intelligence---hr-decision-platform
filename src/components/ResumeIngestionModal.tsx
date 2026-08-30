@@ -91,7 +91,7 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
   const handleRunAgentPipeline = async () => {
     setErrorMessage(null);
     setIsAnalyzing(true);
-    setAgentProgressStep('🔍 Initializing Sourcing & Document Parser Agent...');
+    setAgentProgressStep('Parsing document and extracting candidate claims...');
 
     try {
       let data: any;
@@ -158,9 +158,9 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
               <Upload className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-100">Ingest Candidate Resume</h3>
+              <h3 className="text-base font-bold text-slate-100">Upload Resume</h3>
               <p className="text-xs text-slate-400">
-                Multi-agent orchestration parses, fact-checks, and calibrates fit instantly
+                Upload a resume to begin candidate analysis and evidence verification
               </p>
             </div>
           </div>
@@ -183,7 +183,7 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
         {/* Target Job Selector */}
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-1.5">
-            Calibrate Fit Against Target Role:
+            Evaluate Role Match Against Target Role:
           </label>
           <select
             value={targetJobId}
@@ -295,7 +295,7 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
         {/* Quick Sample Presets */}
         <div>
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-            Or Load Benchmark Profiles:
+            Or Load Sample Candidate Profiles:
           </span>
           <div className="flex flex-wrap gap-2">
             {SAMPLE_BENCHMARK_RESUMES.map((sample, idx) => (
@@ -345,7 +345,7 @@ export const ResumeIngestionModal: React.FC<ResumeIngestionModalProps> = ({
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow-md transition-all cursor-pointer disabled:opacity-50"
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>{isAnalyzing ? 'Orchestrating Agents...' : 'Run Autonomous Multi-Agent Analysis'}</span>
+            <span>{isAnalyzing ? 'Analyzing Resume...' : 'Analyze Resume'}</span>
           </button>
         </div>
       </div>

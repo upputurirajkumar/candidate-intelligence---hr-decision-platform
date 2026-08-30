@@ -1,0 +1,101 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "TalentIntel authenticated user profile with organization association and RBAC role.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["Admin", "HR", "Recruiter", "Hiring Manager", "Interviewer"] },
+        "orgId": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "email", "name", "role", "orgId"]
+    },
+    "Candidate": {
+      "title": "Candidate",
+      "description": "Evaluated candidate profile with multi-source evidence, claims, and role fit analytics.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "title": { "type": "string" },
+        "overallFitScore": { "type": "number" },
+        "pipelineStage": { "type": "string" },
+        "orgId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "orgId"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "Job requisition profile with required skills, experience level, and department.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "department": { "type": "string" },
+        "location": { "type": "string" },
+        "requiredSkills": { "type": "array" },
+        "orgId": { "type": "string" }
+      },
+      "required": ["id", "title", "orgId"]
+    },
+    "Interview": {
+      "title": "Interview",
+      "description": "Structured candidate interview record with question rubrics and scorecard ratings.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "candidateId": { "type": "string" },
+        "roundName": { "type": "string" },
+        "score": { "type": "number" },
+        "interviewerName": { "type": "string" },
+        "orgId": { "type": "string" }
+      },
+      "required": ["id", "candidateId", "roundName", "orgId"]
+    },
+    "CopilotSession": {
+      "title": "CopilotSession",
+      "description": "HR Copilot conversation session metadata including voice or text interaction timestamps.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "candidateId": { "type": "string" },
+        "roleId": { "type": "string" },
+        "mode": { "type": "string", "enum": ["text", "voice"] },
+        "summary": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "orgId": { "type": "string" }
+      },
+      "required": ["id", "userId", "orgId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Private user profiles."
+    },
+    "/organizations/{orgId}/candidates/{candidateId}": {
+      "schema": "Candidate",
+      "description": "Tenant-isolated candidate records."
+    },
+    "/organizations/{orgId}/jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Tenant-isolated job requisition specifications."
+    },
+    "/organizations/{orgId}/interviews/{interviewId}": {
+      "schema": "Interview",
+      "description": "Tenant-isolated structured interview records."
+    },
+    "/organizations/{orgId}/copilot_sessions/{sessionId}": {
+      "schema": "CopilotSession",
+      "description": "Tenant-isolated HR Copilot conversation history."
+    }
+  }
+}

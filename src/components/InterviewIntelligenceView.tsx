@@ -148,9 +148,9 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
               <HelpCircle className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-100">Tailored Live Interview Intelligence & Rubrics</h2>
+              <h2 className="text-lg font-bold text-slate-100">Interview Guide & Evaluation Rubrics</h2>
               <p className="text-xs text-slate-400">
-                Grounded questions targeting resume assertions, weak spots, and L6+ competencies
+                Suggested questions and evaluation criteria based on candidate background and role requirements
               </p>
             </div>
           </div>
@@ -163,14 +163,14 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
               className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>{isGenerating ? 'Generating Probes...' : 'Generate New Probe Question'}</span>
+              <span>{isGenerating ? 'Generating Questions...' : 'Generate Questions'}</span>
             </button>
             <button
               onClick={onOpenCopilot}
               className="flex items-center gap-1.5 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-750 px-3.5 py-2 rounded-xl border border-slate-700 transition-colors cursor-pointer"
             >
               <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Copilot Q&A</span>
+              <span>HR Copilot</span>
             </button>
           </div>
         </div>
@@ -178,7 +178,7 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 text-xs">
           <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl">
             <span className="text-slate-400 block mb-0.5">Target Role Calibration</span>
-            <span className="font-bold text-slate-100">{job?.title || 'Target Requisition'}</span>
+            <span className="font-bold text-slate-100">{job?.title || 'Target Role'}</span>
           </div>
           <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl">
             <span className="text-slate-400 block mb-0.5">Scored Questions</span>
@@ -188,7 +188,7 @@ export const InterviewIntelligenceView: React.FC<InterviewIntelligenceViewProps>
           </div>
           <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl">
             <span className="text-slate-400 block mb-0.5">Evaluator Standard</span>
-            <span className="font-bold text-emerald-400">Strict Non-Hallucinatory Rubric</span>
+            <span className="font-bold text-emerald-400">Evidence-Grounded Rubric</span>
           </div>
         </div>
       </div>

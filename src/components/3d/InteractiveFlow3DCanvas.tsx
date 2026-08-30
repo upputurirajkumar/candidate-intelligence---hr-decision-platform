@@ -293,7 +293,7 @@ export const InteractiveFlow3DCanvas: React.FC = () => {
           {/* Right Artifact Badge */}
           <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-4 lg:w-80 shrink-0">
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Guaranteed Output Artifact</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Pipeline Output Artifact</div>
               <div className="text-xs font-bold text-cyan-300 font-mono mt-1 flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>{activeStage.outputArtifact}</span>

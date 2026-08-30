@@ -112,7 +112,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({ onLaunchPlatform
                   05 MATCH
                 </span>
                 <Target className="w-5 h-5 text-emerald-400 my-1" />
-                <div className="text-xs font-bold text-slate-200">Requisition Fit</div>
+                <div className="text-xs font-bold text-slate-200">Role Match</div>
                 <p className="text-[11px] text-slate-400 leading-tight">Weighted role & skill gap scoring</p>
               </div>
 
@@ -276,11 +276,11 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({ onLaunchPlatform
                     <div className="text-slate-400 text-[11px]">Strict coverage of essential stack items.</div>
                   </div>
                   <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                    <div className="font-bold text-white">2. Experience Fit (30% Weight)</div>
+                    <div className="font-bold text-white">2. Experience Relevance (30% Weight)</div>
                     <div className="text-slate-400 text-[11px]">Domain years and progressive seniority match.</div>
                   </div>
                   <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                    <div className="font-bold text-white">3. Verified Evidence Strength (30% Weight)</div>
+                    <div className="font-bold text-white">3. Evidence Strength (30% Weight)</div>
                     <div className="text-slate-400 text-[11px]">Percentage of claims corroborated with hard artifacts.</div>
                   </div>
                 </div>
@@ -291,11 +291,11 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({ onLaunchPlatform
                 <div className="text-xs font-semibold text-white">Calculated Overall Role Match</div>
                 <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden flex">
                   <div className="bg-indigo-500 h-full w-[40%]" title="Required Skills (40%)" />
-                  <div className="bg-cyan-400 h-full w-[28%]" title="Experience Fit (28%)" />
+                  <div className="bg-cyan-400 h-full w-[28%]" title="Experience Relevance (28%)" />
                   <div className="bg-emerald-400 h-full w-[24%]" title="Evidence Strength (24%)" />
                 </div>
                 <div className="text-[11px] text-slate-400 font-mono">
-                  Formula: (0.40 * Skill) + (0.30 * Exp) + (0.30 * Evidence)
+                  Formula: (0.40 * Skill) + (0.30 * Experience) + (0.30 * Evidence)
                 </div>
               </div>
             </div>

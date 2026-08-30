@@ -109,25 +109,25 @@ export const EvidenceVerificationPanel: React.FC<EvidenceVerificationPanelProps>
       case 'verified':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Verified Truth
+            <CheckCircle2 className="w-3.5 h-3.5" /> Verified
           </span>
         );
       case 'exaggerated':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-400 border border-amber-800">
-            <AlertTriangle className="w-3.5 h-3.5" /> Exaggerated / Scope Gap
+            <AlertTriangle className="w-3.5 h-3.5" /> Exaggerated
           </span>
         );
       case 'unverified':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-900 text-slate-400 border border-slate-700">
-            <HelpCircle className="w-3.5 h-3.5" /> Unverified Assertion
+            <HelpCircle className="w-3.5 h-3.5" /> Unverified
           </span>
         );
       case 'flagged':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-400 border border-rose-800">
-            <XCircle className="w-3.5 h-3.5" /> Contradiction Detected
+            <XCircle className="w-3.5 h-3.5" /> Flagged Discrepancy
           </span>
         );
     }
@@ -194,13 +194,13 @@ export const EvidenceVerificationPanel: React.FC<EvidenceVerificationPanelProps>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-slate-100">Candidate Intelligence & Evidence Engine</h2>
+                <h2 className="text-lg font-bold text-slate-100">Evidence Verification & Grounding</h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-950 text-cyan-300 border border-indigo-800">
                   RAG Grounded
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Cross-source corroborated intelligence, Source Trust Models, and prompt-injection-safe document grounding
+                Cross-source corroborated evidence, source credibility hierarchy, and verifiable claim grounding
               </p>
             </div>
           </div>
@@ -211,7 +211,7 @@ export const EvidenceVerificationPanel: React.FC<EvidenceVerificationPanelProps>
               className="flex items-center gap-1.5 text-xs font-semibold text-cyan-300 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-800 px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Ask Copilot about Evidence</span>
+              <span>Ask HR Copilot</span>
             </button>
           </div>
         </div>
@@ -220,11 +220,11 @@ export const EvidenceVerificationPanel: React.FC<EvidenceVerificationPanelProps>
         <div className="mt-4 p-3 bg-slate-950 border border-slate-800 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
           <span className="font-semibold text-slate-300 flex items-center gap-1.5">
             <Info className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Source Trust Hierarchy:</span>
+            <span>Source Credibility Hierarchy:</span>
           </span>
           <div className="flex flex-wrap items-center gap-2 text-[11px]">
             <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
-              1. Candidate-Reported (Self-reported)
+              1. Candidate-Reported
             </span>
             <span className="text-slate-600">→</span>
             <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
@@ -232,11 +232,11 @@ export const EvidenceVerificationPanel: React.FC<EvidenceVerificationPanelProps>
             </span>
             <span className="text-slate-600">→</span>
             <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
-              3. Potentially Corroborated (Registries)
+              3. Potentially Corroborated
             </span>
             <span className="text-slate-600">→</span>
             <span className="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800 font-bold text-emerald-300">
-              4. Third-Party Verified
+              4. Verified Third-Party
             </span>
           </div>
         </div>
@@ -249,7 +249,7 @@ export const EvidenceVerificationPanel: React.FC<EvidenceVerificationPanelProps>
           </div>
 
           <div className="p-3.5 bg-emerald-950/30 border border-emerald-900/60 rounded-xl">
-            <span className="text-[11px] font-semibold text-emerald-300 uppercase tracking-wider block">Verified Facts</span>
+            <span className="text-[11px] font-semibold text-emerald-300 uppercase tracking-wider block">Verified Claims</span>
             <span className="text-xl font-extrabold text-emerald-300 font-mono">{verifiedCount} claims</span>
           </div>
 
@@ -277,7 +277,7 @@ export const EvidenceVerificationPanel: React.FC<EvidenceVerificationPanelProps>
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${activeTab === 'network' ? 'bg-indigo-600 text-white shadow-xs ring-1 ring-cyan-400' : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800'}`}
         >
           <Network className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Interactive Provenance Graph</span>
+          <span>Evidence Graph</span>
         </button>
 
         <button
@@ -285,7 +285,7 @@ export const EvidenceVerificationPanel: React.FC<EvidenceVerificationPanelProps>
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${activeTab === 'claims' ? 'bg-indigo-600 text-white shadow-xs ring-1 ring-cyan-400' : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800'}`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>Audited Claims & Grounding</span>
+          <span>Audited Claims</span>
         </button>
 
         <button
@@ -293,7 +293,7 @@ export const EvidenceVerificationPanel: React.FC<EvidenceVerificationPanelProps>
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${activeTab === 'consistency' ? 'bg-indigo-600 text-white shadow-xs ring-1 ring-cyan-400' : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800'}`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Cross-Source Consistency & Gaps</span>
+          <span>Cross-Source Consistency</span>
         </button>
 
         <button
@@ -301,7 +301,7 @@ export const EvidenceVerificationPanel: React.FC<EvidenceVerificationPanelProps>
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${activeTab === 'rag' ? 'bg-indigo-600 text-white shadow-xs ring-1 ring-cyan-400' : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800'}`}
         >
           <Search className="w-3.5 h-3.5" />
-          <span>RAG Evidence Retrieval</span>
+          <span>Evidence Retrieval</span>
         </button>
 
         <button

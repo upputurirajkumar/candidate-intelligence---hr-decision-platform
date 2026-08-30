@@ -147,7 +147,7 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
               className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white px-3.5 py-1.8 rounded-xl text-xs font-semibold shadow-md transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Intake Wizard</span>
+              <span>Add Candidate</span>
             </button>
 
             <button
@@ -156,7 +156,7 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
               className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.8 rounded-xl text-xs font-semibold transition-all cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Ingest Resume</span>
+              <span>Upload Resume</span>
             </button>
 
             <button
@@ -165,7 +165,7 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
               className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-3 py-1.8 rounded-xl text-xs font-semibold transition-all cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Copilot</span>
+              <span>HR Copilot</span>
             </button>
           </div>
         </div>
@@ -173,13 +173,13 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
         {/* Sub-Navigation Tabs */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto border-t border-slate-800/60 pt-2 pb-1">
           {[
-            { id: 'leaderboard', label: 'Leaderboard & Ranking', icon: Users, badge: `${candidates.length}` },
-            { id: 'candidates', label: 'Candidate Directory', icon: Filter },
-            { id: 'comparison', label: 'Side-by-Side Matrix', icon: Layers },
-            { id: 'interviews', label: 'Interview Intelligence', icon: HelpCircle },
-            { id: 'evidence', label: 'Evidence & Fact-Check', icon: ShieldCheck },
+            { id: 'leaderboard', label: 'Leaderboard', icon: Users, badge: `${candidates.length}` },
+            { id: 'candidates', label: 'Candidates', icon: Filter },
+            { id: 'comparison', label: 'Candidate Comparison', icon: Layers },
+            { id: 'interviews', label: 'Interviews', icon: HelpCircle },
+            { id: 'evidence', label: 'Evidence', icon: ShieldCheck },
             { id: 'graph', label: 'Knowledge Graph', icon: Share2 },
-            { id: 'analytics', label: 'Pipeline Analytics', icon: BarChart3 },
+            { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = subView === tab.id;
@@ -274,7 +274,7 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
                     </div>
 
                     <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-indigo-950 text-cyan-300 border border-indigo-800">
-                      {cand.overallFitScore}% Match
+                      {cand.overallFitScore}% Role Match
                     </span>
                   </div>
 
@@ -303,7 +303,7 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
                       onClick={() => onSelectCandidate(cand.id)}
                       className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold flex items-center gap-1 transition-colors cursor-pointer"
                     >
-                      <span>Deep Analysis</span>
+                      <span>View Candidate</span>
                       <ArrowRight className="w-3 h-3" />
                     </button>
                   </div>

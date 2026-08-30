@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for authentication and user profile lookup
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isMemberOfOrg(orgId) {
+      return isAuthenticated() && (
+        request.auth.token.orgId == orgId ||
+        getUserDoc().orgId == orgId
+      );
+    }
+
+    function isUserSelf(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || getUserDoc().role in ['Admin', 'HR']);
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAuthenticated() && getUserDoc().role == 'Admin';
+    }
+
+    // Organization Data Partitioning (Multi-Tenant Isolation)
+    match /organizations/{orgId} {
+      allow read: if isMemberOfOrg(orgId);
+      allow write: if isMemberOfOrg(orgId) && getUserDoc().role in ['Admin', 'HR'];
+
+      match /candidates/{candidateId} {
+        allow read: if isMemberOfOrg(orgId);
+        allow write: if isMemberOfOrg(orgId);
+      }
+
+      match /jobs/{jobId} {
+        allow read: if isMemberOfOrg(orgId);
+        allow write: if isMemberOfOrg(orgId);
+      }
+
+      match /interviews/{interviewId} {
+        allow read: if isMemberOfOrg(orgId);
+        allow write: if isMemberOfOrg(orgId);
+      }
+
+      match /copilot_sessions/{sessionId} {
+        allow read: if isMemberOfOrg(orgId);
+        allow write: if isMemberOfOrg(orgId);
+      }
+    }
+
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
