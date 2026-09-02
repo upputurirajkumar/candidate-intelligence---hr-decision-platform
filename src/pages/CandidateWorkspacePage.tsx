@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { Candidate, JobProfile, InterviewQuestion, VerificationStatus } from '../types';
+import { Candidate, JobProfile, InterviewQuestion, VerificationStatus, User } from '../types';
 import { DossierOverview } from '../components/DossierOverview';
 import { CandidateSourcesView } from '../components/CandidateSourcesView';
 import { AgentOrchestratorView } from '../components/AgentOrchestratorView';
 import { EvidenceVerificationPanel } from '../components/EvidenceVerificationPanel';
 import { EntityGraphView } from '../components/EntityGraphView';
 import { InterviewIntelligenceView } from '../components/InterviewIntelligenceView';
+import { HumanDecisionWorkflowModal } from '../components/HumanDecisionWorkflowModal';
+import { CandidateActivityTimeline } from '../components/CandidateActivityTimeline';
+import { CollaborativeNotesPanel } from '../components/CollaborativeNotesPanel';
+import { ReviewAssignmentModal } from '../components/ReviewAssignmentModal';
 import { 
   ArrowLeft, 
   ShieldCheck, 
@@ -23,7 +27,11 @@ import {
   Briefcase,
   ExternalLink,
   GitBranch,
-  Linkedin
+  Linkedin,
+  Scale,
+  History,
+  MessageSquare,
+  UserCheck
 } from 'lucide-react';
 
 export type CandidateWorkspaceTab = 
@@ -32,12 +40,15 @@ export type CandidateWorkspaceTab =
   | 'evidence'
   | 'agents'
   | 'interviews'
+  | 'timeline'
+  | 'collaboration'
   | 'graph';
 
 interface CandidateWorkspacePageProps {
   candidate: Candidate;
   candidates: Candidate[];
   job: JobProfile | null;
+  currentUser?: User | null;
   onBackToWorkspace: () => void;
   onSelectCandidate: (candidateId: string) => void;
   onOpenCopilot: () => void;
@@ -51,6 +62,7 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({
   candidate,
   candidates,
   job,
+  currentUser = null,
   onBackToWorkspace,
   onSelectCandidate,
   onOpenCopilot,
@@ -60,6 +72,8 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({
   onUpdateCandidate,
 }) => {
   const [activeTab, setActiveTab] = useState<CandidateWorkspaceTab>('overview');
+  const [isDecisionModalOpen, setIsDecisionModalOpen] = useState<boolean>(false);
+  const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState<boolean>(false);
 
   const currentIndex = candidates.findIndex(c => c.id === candidate.id);
   const prevCandidate = currentIndex > 0 ? candidates[currentIndex - 1] : null;
@@ -70,53 +84,51 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({
   const verificationRatio = Math.round((verifiedClaimsCount / totalClaimsCount) * 100);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-20">
-      {/* Top Breadcrumb & Quick Switcher Strip */}
-      <div className="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 lg:px-8 py-2.5 text-xs text-slate-400 sticky top-16 z-20 backdrop-blur-xl">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      {/* Top Floating Navigation Bar */}
+      <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={onBackToWorkspace}
-              className="flex items-center gap-1.5 text-slate-300 hover:text-white font-semibold transition-colors cursor-pointer"
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to HR Workspace</span>
+              <span className="hidden sm:inline">Requisition Workspace</span>
             </button>
-            <span>/</span>
-            <span className="text-slate-400">Candidates</span>
-            <span>/</span>
-            <span className="text-cyan-300 font-bold">{candidate?.name || 'Candidate'}</span>
+
+            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <span className="text-slate-500">Candidate:</span>
+              <strong className="text-white font-bold">{candidate.name}</strong>
+              <span className="text-slate-500 font-mono text-[10px]">({currentIndex + 1} of {candidates.length})</span>
+            </div>
           </div>
 
-          {/* Candidate Cycler (Prev / Next) */}
+          {/* Quick Prev / Next Switcher */}
           <div className="flex items-center gap-2">
             <button
               disabled={!prevCandidate}
               onClick={() => prevCandidate && onSelectCandidate(prevCandidate.id)}
-              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 transition-all cursor-pointer"
-              title={prevCandidate ? `Previous: ${prevCandidate?.name || 'Candidate'}` : 'No previous candidate'}
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 transition-colors cursor-pointer"
+              title="Previous Candidate"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-
-            <span className="text-[11px] font-mono text-slate-400">
-              {currentIndex >= 0 ? currentIndex + 1 : 1} of {candidates.length}
-            </span>
-
             <button
               disabled={!nextCandidate}
               onClick={() => nextCandidate && onSelectCandidate(nextCandidate.id)}
-              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 transition-all cursor-pointer"
-              title={nextCandidate ? `Next: ${nextCandidate?.name || 'Candidate'}` : 'No next candidate'}
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 transition-colors cursor-pointer"
+              title="Next Candidate"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Candidate Profile Hero Header Banner */}
+      {/* Candidate Hero Header */}
       <section className="bg-slate-900/90 border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-6 relative overflow-hidden">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative z-10">
           {/* Left: Avatar + Details */}
@@ -166,10 +178,10 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({
             </div>
           </div>
 
-          {/* Right: Metrics & Actions */}
-          <div className="flex flex-wrap items-center gap-4">
+          {/* Right: Metrics & Enterprise Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3">
             {/* Overall Match */}
-            <div className="bg-slate-950/80 border border-slate-800 px-4 py-2.5 rounded-2xl text-center min-w-[100px]">
+            <div className="bg-slate-950/80 border border-slate-800 px-4 py-2.5 rounded-2xl text-center min-w-[90px]">
               <div className="text-[10px] font-mono uppercase text-slate-400">Requisition Fit</div>
               <div className="text-2xl font-black text-cyan-400 font-mono leading-none mt-1">
                 {candidate.overallFitScore}%
@@ -177,7 +189,7 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({
             </div>
 
             {/* Evidence Ratio */}
-            <div className="bg-slate-950/80 border border-slate-800 px-4 py-2.5 rounded-2xl text-center min-w-[100px]">
+            <div className="bg-slate-950/80 border border-slate-800 px-4 py-2.5 rounded-2xl text-center min-w-[90px]">
               <div className="text-[10px] font-mono uppercase text-slate-400">Evidence Rating</div>
               <div className="text-2xl font-black text-emerald-400 font-mono leading-none mt-1 flex items-center justify-center gap-1">
                 <ShieldCheck className="w-4 h-4" />
@@ -185,9 +197,9 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({
               </div>
             </div>
 
-            {/* Pipeline Stage Select */}
+            {/* Stage Selector */}
             <div className="space-y-1">
-              <label className="text-[10px] font-mono uppercase text-slate-400 block">Candidate Stage</label>
+              <label className="text-[10px] font-mono uppercase text-slate-400 block">Stage</label>
               <select
                 value={candidate.status}
                 onChange={(e) => onStatusChange(e.target.value as Candidate['status'])}
@@ -202,13 +214,32 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({
               </select>
             </div>
 
+            {/* Human Decision Action */}
+            <button
+              onClick={() => setIsDecisionModalOpen(true)}
+              className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Scale className="w-4 h-4 text-amber-300" />
+              <span>Record Decision</span>
+            </button>
+
+            {/* Assign Review Task Action */}
+            <button
+              onClick={() => setIsAssignmentModalOpen(true)}
+              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Assign review task to team member"
+            >
+              <UserCheck className="w-4 h-4 text-cyan-400" />
+              <span>Assign</span>
+            </button>
+
             {/* Copilot Trigger */}
             <button
               onClick={onOpenCopilot}
-              className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Ask Copilot</span>
+              <span>Copilot</span>
             </button>
           </div>
         </div>
@@ -221,6 +252,8 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({
             { id: 'sources', label: 'Raw Data & Sources', icon: Layers },
             { id: 'agents', label: 'AI Multi-Agent Review', icon: Cpu },
             { id: 'interviews', label: 'Interview Intelligence', icon: HelpCircle, badge: `${candidate.interviewQuestions?.length || 0}` },
+            { id: 'timeline', label: 'Journey Timeline & Audit', icon: History },
+            { id: 'collaboration', label: 'Team Evaluation Notes', icon: MessageSquare },
             { id: 'graph', label: 'Entity Graph', icon: Share2 },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -271,6 +304,7 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({
             candidate={candidate}
             onVerifyClaim={onVerifyClaim}
             onOpenCopilot={onOpenCopilot}
+            onCandidateUpdated={onUpdateCandidate}
           />
         )}
 
@@ -297,10 +331,47 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({
           />
         )}
 
+        {activeTab === 'timeline' && (
+          <CandidateActivityTimeline
+            candidate={candidate}
+            onRefresh={() => {}}
+          />
+        )}
+
+        {activeTab === 'collaboration' && (
+          <CollaborativeNotesPanel
+            candidate={candidate}
+            currentUser={currentUser}
+          />
+        )}
+
         {activeTab === 'graph' && (
           <EntityGraphView candidate={candidate} />
         )}
       </main>
+
+      {/* Human Decision Modal */}
+      {isDecisionModalOpen && (
+        <HumanDecisionWorkflowModal
+          isOpen={isDecisionModalOpen}
+          onClose={() => setIsDecisionModalOpen(false)}
+          candidate={candidate}
+          job={job}
+          onDecisionRecorded={(updated) => {
+            onUpdateCandidate(updated);
+          }}
+        />
+      )}
+
+      {/* Review Assignment Modal */}
+      {isAssignmentModalOpen && (
+        <ReviewAssignmentModal
+          isOpen={isAssignmentModalOpen}
+          onClose={() => setIsAssignmentModalOpen(false)}
+          candidate={candidate}
+          onAssignmentCreated={() => {}}
+        />
+      )}
     </div>
   );
 };

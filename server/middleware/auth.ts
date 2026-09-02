@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { db } from '../db';
-import { User, UserRole } from '../../src/types';
+import { User, UserRole, AppPermission, ROLE_PERMISSIONS } from '../../src/types';
 
 const TOKEN_SECRET = process.env.SESSION_SECRET || 'talentintel-auth-sec-2026-enterprise';
 
@@ -113,3 +113,21 @@ export function requireRole(allowedRoles: UserRole[]) {
     next();
   };
 }
+
+export function requirePermission(permission: AppPermission) {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const permissions = ROLE_PERMISSIONS[req.user.role] || [];
+    if (!permissions.includes(permission)) {
+      return res.status(403).json({
+        error: `Access Denied: Role '${req.user.role}' lacks permission '${permission}' required for this action.`,
+      });
+    }
+
+    next();
+  };
+}
+

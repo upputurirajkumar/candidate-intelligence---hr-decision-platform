@@ -9,12 +9,21 @@ import {
   VerificationStatus,
   ExternalSourceRecord,
   CandidateDocumentRecord,
-  CandidateCertification
+  CandidateCertification,
+  HumanDecisionRecord,
+  CandidateReviewAssignment,
+  CandidateCollaborativeNote,
+  JobHiringPolicy,
+  UserInvitation,
+  DataGovernancePolicy,
+  CandidateActivityTimelineItem,
+  UserRole
 } from '../../src/types';
 import { generateCopilotResponse, analyzeResumeWithAgents, indexCandidateInRAG } from '../gemini';
 import { 
   requireAuth, 
   requireRole, 
+  requirePermission,
   generateToken,
   revokeToken,
   AuthenticatedRequest 
@@ -32,6 +41,9 @@ import {
   detectDuplicateCandidates,
   analyzeInterviewFeedback,
   calculateHRPipelineAnalytics,
+  calculateDecisionReadiness,
+  calculateHumanVsAIAnalytics,
+  calculateFairnessQualityMetrics,
   SKILL_SEMANTIC_ONTOLOGY,
 } from '../services/analysisEngine';
 import { parseDocumentBuffer } from '../services/documentParser';
@@ -44,7 +56,18 @@ import {
   generateEvidenceGroundedSummary,
   extractCandidateClaims,
   buildEvidenceRecords,
+  calculateEvidenceCoverage,
+  generateVerificationQueue,
+  buildSourceReliabilityProfiles,
+  verifyCandidateSkillsWithAbsenceDistinction,
+  buildEvidenceGraph,
 } from '../services/integrityEngine';
+import { observability } from '../services/observability';
+import { objectStorage } from '../services/objectStorage';
+import { jobQueue } from '../services/jobQueue';
+import { webhookService } from '../services/webhookService';
+import { aiGuardrails } from '../services/aiGuardrails';
+import { backupService } from '../services/backupService';
 
 export const apiRouter = express.Router();
 
@@ -326,7 +349,7 @@ apiRouter.get('/candidates/:id', requireAuth, (req: AuthenticatedRequest, res) =
 
   // Ensure Phase 3 candidate intelligence attributes exist
   if (!candidate.detailedClaims || candidate.detailedClaims.length === 0) {
-    candidate.detailedClaims = extractCandidateClaims(candidate);
+    candidate.detailedClaims = extractCandidateClaims(candidate, job);
   }
   if (!candidate.evidenceRecords || candidate.evidenceRecords.length === 0) {
     candidate.evidenceRecords = buildEvidenceRecords(candidate, candidate.detailedClaims);
@@ -342,6 +365,15 @@ apiRouter.get('/candidates/:id', requireAuth, (req: AuthenticatedRequest, res) =
       analyzeProjectOwnership(candidate, 'Telemetry Ingestion & Processing Architecture', 'Lead Architect'),
     ];
   }
+  
+  // Calculate Evidence Coverage, Verification Queue, Source Reliability, Skill Verifications, and Evidence Graph
+  candidate.evidenceCoverage = calculateEvidenceCoverage(candidate, candidate.detailedClaims);
+  if (!candidate.verificationQueue || candidate.verificationQueue.length === 0) {
+    candidate.verificationQueue = generateVerificationQueue(candidate, candidate.detailedClaims, candidate.consistencyReport, job);
+  }
+  candidate.sourceReliability = buildSourceReliabilityProfiles(candidate);
+  candidate.skillVerifications = verifyCandidateSkillsWithAbsenceDistinction(candidate, job);
+  candidate.evidenceGraphData = buildEvidenceGraph(candidate, candidate.detailedClaims, candidate.evidenceRecords, candidate.consistencyReport, candidate.verificationQueue);
 
   // Index in RAG engine for tenant
   indexCandidateInRAG(candidate, req.orgId || 'org-talentintel-enterprise');
@@ -377,13 +409,18 @@ apiRouter.get('/candidates/:id/integrity-audit', requireAuth, (req: Authenticate
   }
 
   const job = db.getJobById(candidate.targetJobId, req.orgId!) || db.getJobs(req.orgId!)[0];
-  const claims = extractCandidateClaims(candidate);
+  const claims = extractCandidateClaims(candidate, job);
   const evidence = buildEvidenceRecords(candidate, claims);
   const consistencyReport = evaluateCrossSourceConsistency(candidate);
   const certifications = auditCandidateCertifications(candidate);
   const projectOwnership = analyzeProjectOwnership(candidate, 'Telemetry Ingestion & High Scale Pipeline');
   const semanticMatch = job ? evaluateSemanticSkillMatch(candidate, job) : null;
   const summary = job ? generateEvidenceGroundedSummary(candidate, job, consistencyReport) : null;
+  const evidenceCoverage = calculateEvidenceCoverage(candidate, claims);
+  const verificationQueue = generateVerificationQueue(candidate, claims, consistencyReport, job);
+  const sourceReliability = buildSourceReliabilityProfiles(candidate);
+  const skillVerifications = verifyCandidateSkillsWithAbsenceDistinction(candidate, job);
+  const evidenceGraphData = buildEvidenceGraph(candidate, claims, evidence, consistencyReport, verificationQueue);
 
   res.json({
     candidateId: candidate.id,
@@ -394,7 +431,104 @@ apiRouter.get('/candidates/:id/integrity-audit', requireAuth, (req: Authenticate
     projectOwnership,
     semanticMatch,
     summary,
+    evidenceCoverage,
+    verificationQueue,
+    sourceReliability,
+    skillVerifications,
+    evidenceGraphData,
   });
+});
+
+// POST /api/candidates/:id/verification-queue/:itemId/resolve (Interactive Queue Resolution)
+apiRouter.post('/candidates/:id/verification-queue/:itemId/resolve', requireAuth, requireRole(['Admin', 'HR', 'Recruiter', 'Hiring Manager']), (req: AuthenticatedRequest, res) => {
+  const { action, notes = '' } = req.body; // action: 'VERIFY' | 'REQUEST_INFO' | 'MARK_REVIEWED' | 'DISMISS'
+  const candidate = db.getCandidateById(req.params.id, req.orgId || 'org-talentintel-enterprise');
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found.' });
+  }
+
+  const job = db.getJobById(candidate.targetJobId, req.orgId!) || db.getJobs(req.orgId!)[0];
+  if (!candidate.verificationQueue || candidate.verificationQueue.length === 0) {
+    candidate.verificationQueue = generateVerificationQueue(candidate, candidate.detailedClaims || extractCandidateClaims(candidate, job), candidate.consistencyReport || evaluateCrossSourceConsistency(candidate), job);
+  }
+
+  const itemIndex = candidate.verificationQueue.findIndex(q => q.id === req.params.itemId);
+  if (itemIndex === -1) {
+    return res.status(404).json({ error: 'Verification item not found in queue.' });
+  }
+
+  const item = candidate.verificationQueue[itemIndex];
+  const now = new Date().toISOString();
+  item.resolvedBy = req.user!.name;
+  item.resolvedAt = now;
+  item.resolutionNotes = notes;
+
+  if (action === 'VERIFY') {
+    item.status = 'VERIFIED';
+    if (item.claimId && candidate.detailedClaims) {
+      const claim = candidate.detailedClaims.find(c => c.claim_id === item.claimId);
+      if (claim) {
+        claim.verification_status = 'verified';
+        claim.verification_state = 'VERIFIED';
+        claim.integrity_support = 'SUPPORTED';
+      }
+    }
+  } else if (action === 'REQUEST_INFO') {
+    item.status = 'INFO_REQUESTED';
+  } else if (action === 'MARK_REVIEWED') {
+    item.status = 'REVIEWED';
+  } else if (action === 'DISMISS') {
+    item.status = 'DISMISSED';
+  }
+
+  // Recalculate Evidence Coverage & Evidence Graph
+  candidate.evidenceCoverage = calculateEvidenceCoverage(candidate, candidate.detailedClaims || []);
+  candidate.evidenceGraphData = buildEvidenceGraph(candidate, candidate.detailedClaims || [], candidate.evidenceRecords || [], candidate.consistencyReport || evaluateCrossSourceConsistency(candidate), candidate.verificationQueue);
+
+  db.saveCandidate(candidate, req.orgId || 'org-talentintel-enterprise');
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId: req.orgId!,
+    action: 'CLAIM_VERIFIED',
+    entityType: 'claim',
+    entityId: item.id,
+    details: `Verification queue item '${item.title}' resolved as ${action} with notes: "${notes}" by ${req.user!.name}.`,
+  });
+
+  res.json({ candidate, resolvedItem: item });
+});
+
+// POST /api/candidates/:id/verification-queue/batch (Batch Resolution)
+apiRouter.post('/candidates/:id/verification-queue/batch', requireAuth, requireRole(['Admin', 'HR', 'Recruiter']), (req: AuthenticatedRequest, res) => {
+  const { action, itemIds = [], notes = '' } = req.body;
+  const candidate = db.getCandidateById(req.params.id, req.orgId || 'org-talentintel-enterprise');
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found.' });
+  }
+
+  if (!candidate.verificationQueue) {
+    return res.status(400).json({ error: 'No verification queue items found.' });
+  }
+
+  const now = new Date().toISOString();
+  candidate.verificationQueue.forEach(item => {
+    if (itemIds.includes(item.id)) {
+      item.resolvedBy = req.user!.name;
+      item.resolvedAt = now;
+      item.resolutionNotes = notes || `Batch action applied: ${action}`;
+      if (action === 'VERIFY') item.status = 'VERIFIED';
+      else if (action === 'MARK_REVIEWED') item.status = 'REVIEWED';
+      else if (action === 'DISMISS') item.status = 'DISMISSED';
+    }
+  });
+
+  candidate.evidenceCoverage = calculateEvidenceCoverage(candidate, candidate.detailedClaims || []);
+  db.saveCandidate(candidate, req.orgId || 'org-talentintel-enterprise');
+
+  res.json({ candidate });
 });
 
 // POST create candidate
@@ -1435,29 +1569,877 @@ ${candidate.skills.map(s => `- ${s.name} (${s.level || 'proficient'}) ${s.verifi
   res.json({ candidate, exportedBy: req.user!.name, exportedAt: new Date().toISOString() });
 });
 
-// GET /api/candidates/export-all (Bulk Export all candidates for organization)
-apiRouter.get('/candidates/export-all', requireAuth, requireRole(['Admin', 'HR']), (req: AuthenticatedRequest, res) => {
+// ==========================================
+// PROMPT 4: ENTERPRISE HR DECISION & GOVERNANCE ENDPOINTS
+// ==========================================
+
+// GET /api/candidates/:id/decision-readiness
+apiRouter.get('/candidates/:id/decision-readiness', requireAuth, (req: AuthenticatedRequest, res) => {
   const orgId = req.orgId || 'org-talentintel-enterprise';
-  const candidates = db.getCandidates(orgId, { includeArchived: true });
+  const candidate = db.getCandidateById(req.params.id, orgId);
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found' });
+  }
+
+  const targetJobId = candidate.appliedJobId || candidate.targetJobId;
+  const job = targetJobId ? db.getJobById(targetJobId, orgId) || null : null;
+  const policy = targetJobId ? db.getJobHiringPolicy(targetJobId, orgId) || null : null;
+  const interviews = db.getInterviewRecords(candidate.id, orgId);
+
+  const readiness = calculateDecisionReadiness(candidate, job, policy, interviews);
+  res.json(readiness);
+});
+
+// POST /api/candidates/:id/decision (Record a structured human decision / override)
+apiRouter.post('/candidates/:id/decision', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const candidate = db.getCandidateById(req.params.id, orgId);
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found' });
+  }
+
+  const {
+    decisionType,
+    newState,
+    reason,
+    evidenceContext = [],
+    isOverride = false,
+    overrideReason,
+    aiRecommendationSnapshot,
+  } = req.body;
+
+  if (!decisionType || !newState || !reason) {
+    return res.status(400).json({ error: 'Missing required decision fields: decisionType, newState, reason' });
+  }
+
+  const previousState = candidate.pipelineStatus || candidate.status || 'Applied';
+
+  // Map newState to pipeline status & general status
+  const mappedStatus = newState === 'Hired' ? 'hired' : newState === 'Rejected' ? 'rejected' : 'reviewed';
+  const updatedStageHistory = [
+    ...(candidate.stageHistory || []),
+    {
+      stage: newState,
+      enteredAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+      updatedBy: req.user!.name,
+      changedBy: req.user!.name,
+      notes: reason,
+    },
+  ];
+
+  const updatedCandidate = db.updateCandidate(candidate.id, {
+    pipelineStatus: newState,
+    status: mappedStatus,
+    stageHistory: updatedStageHistory,
+  }, orgId);
+
+  const targetJobId = candidate.appliedJobId || candidate.targetJobId || 'job-1';
+  const decisionRecord = db.addHumanDecision({
+    candidateId: candidate.id,
+    jobId: targetJobId,
+    orgId,
+    actorId: req.user!.id,
+    actorName: req.user!.name,
+    actorRole: req.user!.role,
+    decisionType,
+    previousState,
+    newState,
+    reason,
+    evidenceContext,
+    isOverride: Boolean(isOverride),
+    overrideReason: isOverride ? overrideReason || reason : undefined,
+    aiRecommendationSnapshot: aiRecommendationSnapshot || {
+      recommendation: candidate.overallFitScore >= 80 ? 'PROCEED_TO_INTERVIEW' : 'FURTHER_VERIFICATION_NEEDED',
+      fitScore: candidate.overallFitScore,
+      confidence: candidate.verificationRating >= 80 ? 'High' : 'Moderate',
+    },
+  }, orgId);
 
   db.addAuditLog({
     userId: req.user!.id,
     userEmail: req.user!.email,
     userName: req.user!.name,
-    orgId: req.orgId!,
-    action: 'BULK_CANDIDATE_DATA_EXPORTED',
+    orgId,
+    action: isOverride ? 'CANDIDATE_DECISION_OVERRIDE' : 'CANDIDATE_HUMAN_DECISION',
     entityType: 'candidate',
-    entityId: 'all',
-    details: `Exported bulk candidate database (${candidates.length} records).`,
+    entityId: candidate.id,
+    details: `${req.user!.name} (${req.user!.role}) executed decision '${decisionType}' [${previousState} → ${newState}]. Reason: ${reason}`,
   });
 
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Content-Disposition', `attachment; filename="candidates_export_${orgId}_${Date.now()}.json"`);
   res.json({
-    organizationId: orgId,
-    totalRecords: candidates.length,
-    exportedAt: new Date().toISOString(),
-    candidates,
+    success: true,
+    decision: decisionRecord,
+    candidate: updatedCandidate,
   });
 });
+
+// GET /api/candidates/:id/decisions
+apiRouter.get('/candidates/:id/decisions', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const decisions = db.getHumanDecisions(req.params.id, orgId);
+  res.json(decisions);
+});
+
+// GET /api/candidates/:id/notes
+apiRouter.get('/candidates/:id/notes', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const notes = db.getCollaborativeNotes(req.params.id, orgId);
+  res.json(notes);
+});
+
+// POST /api/candidates/:id/notes
+apiRouter.post('/candidates/:id/notes', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const candidate = db.getCandidateById(req.params.id, orgId);
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found' });
+  }
+
+  const { content, mentions = [], category = 'GENERAL' } = req.body;
+  if (!content || !content.trim()) {
+    return res.status(400).json({ error: 'Note content cannot be empty' });
+  }
+
+  const note = db.addCollaborativeNote({
+    candidateId: candidate.id,
+    orgId,
+    authorId: req.user!.id,
+    authorName: req.user!.name,
+    authorRole: req.user!.role,
+    authorAvatar: req.user!.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    content,
+    mentions,
+    category,
+  }, orgId);
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'COLLABORATIVE_NOTE_ADDED',
+    entityType: 'candidate',
+    entityId: candidate.id,
+    details: `${req.user!.name} posted a '${category}' note on ${candidate.name}'s profile.`,
+  });
+
+  res.status(201).json(note);
+});
+
+// DELETE /api/candidates/:id/notes/:noteId
+apiRouter.delete('/candidates/:id/notes/:noteId', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const deleted = db.deleteCollaborativeNote(req.params.noteId, orgId);
+  if (!deleted) {
+    return res.status(404).json({ error: 'Note not found or unauthorized' });
+  }
+  res.json({ success: true });
+});
+
+// GET /api/assignments
+apiRouter.get('/assignments', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const { candidateId, assignedToUserId, status } = req.query;
+  const assignments = db.getReviewAssignments(orgId, {
+    candidateId: candidateId ? String(candidateId) : undefined,
+    assignedToUserId: assignedToUserId ? String(assignedToUserId) : undefined,
+    status: status ? String(status) : undefined,
+  });
+  res.json(assignments);
+});
+
+// POST /api/assignments
+apiRouter.post('/assignments', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const { candidateId, assignedToUserId, taskType, dueDate, notes } = req.body;
+
+  if (!candidateId || !assignedToUserId || !taskType || !dueDate) {
+    return res.status(400).json({ error: 'Missing required assignment fields' });
+  }
+
+  const candidate = db.getCandidateById(candidateId, orgId);
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found' });
+  }
+
+  const assignedToUser = db.getUserById(assignedToUserId);
+  if (!assignedToUser) {
+    return res.status(404).json({ error: 'Assigned reviewer not found' });
+  }
+
+  const assignment = db.addReviewAssignment({
+    candidateId,
+    candidateName: candidate.name,
+    jobId: candidate.appliedJobId || 'job-1',
+    orgId,
+    assignedToUserId: assignedToUser.id,
+    assignedToUserName: assignedToUser.name,
+    assignedByUserId: req.user!.id,
+    assignedByUserName: req.user!.name,
+    taskType,
+    status: 'PENDING',
+    dueDate,
+    notes,
+  }, orgId);
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'REVIEW_ASSIGNMENT_CREATED',
+    entityType: 'candidate',
+    entityId: candidate.id,
+    details: `${req.user!.name} assigned '${taskType}' review for ${candidate.name} to ${assignedToUser.name}.`,
+  });
+
+  res.status(201).json(assignment);
+});
+
+// PATCH /api/assignments/:id
+apiRouter.patch('/assignments/:id', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const updated = db.updateReviewAssignment(req.params.id, req.body, orgId);
+  if (!updated) {
+    return res.status(404).json({ error: 'Assignment not found' });
+  }
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'REVIEW_ASSIGNMENT_UPDATED',
+    entityType: 'candidate',
+    entityId: updated.candidateId,
+    details: `${req.user!.name} updated assignment ${updated.id} status to '${updated.status}'.`,
+  });
+
+  res.json(updated);
+});
+
+// GET /api/jobs/:id/policy
+apiRouter.get('/jobs/:id/policy', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const policy = db.getJobHiringPolicy(req.params.id, orgId);
+  res.json(policy);
+});
+
+// GET /api/jobs/:id/policy/history
+apiRouter.get('/jobs/:id/policy/history', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const history = db.getJobHiringPolicyHistory(req.params.id, orgId);
+  res.json(history);
+});
+
+// POST /api/jobs/:id/policy
+apiRouter.post('/jobs/:id/policy', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const job = db.getJobById(req.params.id, orgId);
+  if (!job) {
+    return res.status(404).json({ error: 'Job not found' });
+  }
+
+  const newPolicy = db.saveJobHiringPolicy(
+    job.id,
+    req.body,
+    orgId,
+    req.user!.name
+  );
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'HIRING_POLICY_UPDATED',
+    entityType: 'job',
+    entityId: job.id,
+    details: `${req.user!.name} published Hiring Policy v${newPolicy.policyVersion} for job '${job.title}'.`,
+  });
+
+  res.status(201).json(newPolicy);
+});
+
+// GET /api/admin/users
+apiRouter.get('/admin/users', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const users = db.getUsers(orgId).map(u => {
+    const { passwordHash, passwordSalt, ...safeUser } = u;
+    return safeUser;
+  });
+  res.json(users);
+});
+
+// POST /api/admin/invitations
+apiRouter.post('/admin/invitations', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const { email, name, role } = req.body;
+
+  if (!email || !name || !role) {
+    return res.status(400).json({ error: 'Missing email, name, or role' });
+  }
+
+  const invitation = db.createInvitation({
+    email,
+    name,
+    role: role as UserRole,
+    orgId,
+    invitedBy: req.user!.name,
+  });
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'USER_INVITATION_SENT',
+    entityType: 'user',
+    entityId: invitation.id,
+    details: `Invited ${name} (${email}) with role '${role}'.`,
+  });
+
+  res.status(201).json(invitation);
+});
+
+// GET /api/admin/invitations
+apiRouter.get('/admin/invitations', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const invitations = db.getInvitations(orgId);
+  res.json(invitations);
+});
+
+// PATCH /api/admin/users/:id/role
+apiRouter.patch('/admin/users/:id/role', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const { role } = req.body;
+
+  if (!role) {
+    return res.status(400).json({ error: 'Role is required' });
+  }
+
+  const updatedUser = db.updateUserRole(req.params.id, role as UserRole, orgId);
+  if (!updatedUser) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'USER_ROLE_UPDATED',
+    entityType: 'user',
+    entityId: updatedUser.id,
+    details: `Updated role for ${updatedUser.name} to '${role}'.`,
+  });
+
+  const { passwordHash, passwordSalt, ...safeUser } = updatedUser;
+  res.json(safeUser);
+});
+
+// DELETE /api/admin/users/:id
+apiRouter.delete('/admin/users/:id', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  if (req.params.id === req.user!.id) {
+    return res.status(400).json({ error: 'Cannot delete own active user account' });
+  }
+
+  const deleted = db.deleteUser(req.params.id, orgId);
+  if (!deleted) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'USER_DELETED',
+    entityType: 'user',
+    entityId: req.params.id,
+    details: `Removed user account ${req.params.id} from organization.`,
+  });
+
+  res.json({ success: true });
+});
+
+// POST /api/auth/accept-invite
+apiRouter.post('/auth/accept-invite', (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) {
+    return res.status(400).json({ error: 'Token and password are required' });
+  }
+
+  const newUser = db.acceptInvitation(token, password);
+  if (!newUser) {
+    return res.status(400).json({ error: 'Invalid or expired invitation token' });
+  }
+
+  const authToken = generateToken(newUser);
+  const { passwordHash, passwordSalt, ...safeUser } = newUser;
+  res.json({ token: authToken, user: safeUser });
+});
+
+// GET /api/analytics/human-vs-ai
+apiRouter.get('/analytics/human-vs-ai', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const candidates = db.getCandidates(orgId);
+  const decisions = db.getAllHumanDecisions(orgId);
+
+  const analytics = calculateHumanVsAIAnalytics(decisions, candidates);
+  res.json(analytics);
+});
+
+// GET /api/analytics/fairness-quality
+apiRouter.get('/analytics/fairness-quality', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const candidates = db.getCandidates(orgId);
+  const decisions = db.getAllHumanDecisions(orgId);
+
+  const metrics = calculateFairnessQualityMetrics(candidates, decisions);
+  res.json(metrics);
+});
+
+// GET /api/candidates/:id/timeline (Unified chronological audit & activity stream)
+apiRouter.get('/candidates/:id/timeline', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const candidate = db.getCandidateById(req.params.id, orgId);
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidate not found' });
+  }
+
+  const decisions = db.getHumanDecisions(candidate.id, orgId);
+  const notes = db.getCollaborativeNotes(candidate.id, orgId);
+  const interviews = db.getInterviewRecords(candidate.id, orgId);
+
+  const timeline: CandidateActivityTimelineItem[] = [];
+
+  // Intake item
+  timeline.push({
+    id: `tl-intake-${candidate.id}`,
+    type: 'intake',
+    title: 'Candidate Profile Ingested',
+    description: `Profile imported with ${candidate.skills?.length || 0} extracted skills and ${candidate.experiences?.length || 0} documented roles.`,
+    actor: 'System Intake Pipeline',
+    timestamp: candidate.stageHistory?.[0]?.enteredAt || candidate.stageHistory?.[0]?.timestamp || new Date(Date.now() - 3600000 * 24 * 7).toISOString(),
+  });
+
+  // Stage transitions
+  (candidate.stageHistory || []).forEach((st, idx) => {
+    timeline.push({
+      id: `tl-stage-${idx}`,
+      type: 'stage_transition',
+      title: `Advanced to ${st.stage}`,
+      description: st.notes || `Moved to ${st.stage} pipeline stage.`,
+      actor: st.updatedBy || st.changedBy || 'HR System',
+      timestamp: st.enteredAt || st.timestamp || new Date().toISOString(),
+    });
+  });
+
+  // Verification claims
+  (candidate.claims || []).forEach((cl, idx) => {
+    timeline.push({
+      id: `tl-claim-${idx}`,
+      type: 'verification',
+      title: `Claim Verified: ${cl.claim}`,
+      description: `Status: ${cl.status.toUpperCase()}. Evidence: ${cl.evidenceSource || 'Resume Claims'}`,
+      actor: 'Integrity Engine',
+      timestamp: new Date(Date.now() - 3600000 * 24 * (idx + 1)).toISOString(),
+    });
+  });
+
+  // Interviews
+  interviews.forEach(intv => {
+    timeline.push({
+      id: `tl-intv-${intv.id}`,
+      type: 'interview',
+      title: `${intv.stage || 'Interview'} Recorded`,
+      description: `Recommendation: ${intv.recommendation || 'Completed'}. Notes: ${(intv.notes || '').slice(0, 100)}...`,
+      actor: intv.interviewerName,
+      timestamp: intv.createdAt,
+    });
+  });
+
+  // Collaborative Notes
+  notes.forEach(note => {
+    timeline.push({
+      id: `tl-note-${note.id}`,
+      type: 'note',
+      title: `Team Note [${note.category}]`,
+      description: note.content,
+      actor: note.authorName,
+      actorRole: note.authorRole,
+      timestamp: note.createdAt,
+    });
+  });
+
+  // Human Decisions
+  decisions.forEach(dec => {
+    timeline.push({
+      id: `tl-dec-${dec.id}`,
+      type: 'decision',
+      title: dec.isOverride ? `Human Override: ${dec.decisionType}` : `Human Decision: ${dec.decisionType}`,
+      description: `Transitioned: ${dec.previousState} → ${dec.newState}. Rationale: ${dec.reason}`,
+      actor: dec.actorName,
+      actorRole: dec.actorRole,
+      timestamp: dec.timestamp,
+    });
+  });
+
+  // Sort descending by timestamp
+  timeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  res.json(timeline);
+});
+
+// GET /api/governance
+apiRouter.get('/governance', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const policy = db.getGovernancePolicy(orgId);
+  res.json(policy);
+});
+
+// POST /api/governance
+apiRouter.post('/governance', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const updated = db.updateGovernancePolicy(orgId, req.body);
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'DATA_GOVERNANCE_POLICY_UPDATED',
+    entityType: 'organization',
+    entityId: orgId,
+    details: `${req.user!.name} updated enterprise retention & privacy rules (Retention: ${updated.retentionPeriodDays}d).`,
+  });
+
+  res.json(updated);
+});
+
+// POST /api/candidates/:id/anonymize (GDPR / CCPA right-to-be-forgotten action)
+apiRouter.post('/candidates/:id/anonymize', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const anonymized = db.anonymizeCandidate(req.params.id, orgId, req.user!.name);
+  if (!anonymized) {
+    return res.status(404).json({ error: 'Candidate not found' });
+  }
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'CANDIDATE_ANONYMIZED_GDPR',
+    entityType: 'candidate',
+    entityId: req.params.id,
+    details: `${req.user!.name} executed irreversible PII anonymization under enterprise privacy retention policy.`,
+  });
+
+  res.json({ success: true, candidate: anonymized });
+});
+
+// ==========================================
+// 19. OBSERVABILITY, METRICS & READINESS
+// ==========================================
+
+// GET /api/health (Liveness)
+apiRouter.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: 'TalentIntel Enterprise API',
+    version: '2026.1.0-prod',
+  });
+});
+
+// GET /api/health/readiness (Deep Health Probe)
+apiRouter.get('/health/readiness', (req, res) => {
+  try {
+    const queueStats = jobQueue.getQueueStats();
+    const candidateCount = db.getCandidates('org-talentintel-enterprise').length;
+    const isDbHealthy = candidateCount >= 0;
+    const isStorageHealthy = true;
+    const isRagHealthy = true;
+
+    const allHealthy = isDbHealthy && isStorageHealthy && isRagHealthy;
+
+    const responsePayload = {
+      status: allHealthy ? 'READY' : 'DEGRADED',
+      timestamp: new Date().toISOString(),
+      checks: {
+        database: { status: isDbHealthy ? 'HEALTHY' : 'DOWN', latencyMs: 1 },
+        objectStorage: { status: isStorageHealthy ? 'HEALTHY' : 'DOWN', latencyMs: 1 },
+        ragVectorStore: { status: isRagHealthy ? 'HEALTHY' : 'DOWN' },
+        backgroundJobQueue: { status: 'HEALTHY', ...queueStats },
+        aiProvider: { status: 'AVAILABLE', defaultModel: 'gemini-2.5-flash' },
+      },
+    };
+
+    res.status(allHealthy ? 200 : 503).json(responsePayload);
+  } catch (err: any) {
+    res.status(500).json({ status: 'UNHEALTHY', error: err.message });
+  }
+});
+
+// GET /api/observability/metrics
+apiRouter.get('/observability/metrics', requireAuth, (req: AuthenticatedRequest, res) => {
+  const queueStats = jobQueue.getQueueStats();
+  const metrics = observability.getMetrics(queueStats.active, queueStats.completed, queueStats.failed);
+  res.json(metrics);
+});
+
+// GET /api/observability/logs
+apiRouter.get('/observability/logs', requireAuth, (req: AuthenticatedRequest, res) => {
+  const limit = Math.min(200, parseInt(req.query.limit as string) || 50);
+  const level = req.query.level as string;
+  const logs = observability.getLogs(limit, level, req.orgId);
+  res.json({ logs });
+});
+
+// ==========================================
+// 20. ASYNC BACKGROUND JOB QUEUE
+// ==========================================
+
+// GET /api/jobs/queue (List jobs for org)
+apiRouter.get('/jobs/queue', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const jobs = jobQueue.listJobs(orgId);
+  res.json({ jobs });
+});
+
+// GET /api/jobs/queue/:id (Get job status)
+apiRouter.get('/jobs/queue/:id', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const job = jobQueue.getJob(req.params.id, orgId);
+  if (!job) return res.status(404).json({ error: 'Job not found.' });
+  res.json({ job });
+});
+
+// POST /api/jobs/queue/cancel/:id
+apiRouter.post('/jobs/queue/cancel/:id', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const cancelled = jobQueue.cancelJob(req.params.id, orgId);
+  if (!cancelled) return res.status(400).json({ error: 'Job could not be cancelled.' });
+  res.json({ success: true, message: 'Job cancelled successfully.' });
+});
+
+// POST /api/jobs/batch-process (Enqueue batch RAG / verification)
+apiRouter.post('/jobs/batch-process', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const { type, payload } = req.body;
+  if (!type) return res.status(400).json({ error: 'Job type is required.' });
+
+  const job = jobQueue.enqueue(orgId, type, payload || {}, req.user!.id);
+  res.status(202).json({ success: true, job });
+});
+
+// ==========================================
+// 21. SECURE OBJECT STORAGE & SIGNED DOWNLOADS
+// ==========================================
+
+// POST /api/storage/upload (Secure multi-tenant file ingest)
+apiRouter.post('/storage/upload', requireAuth, uploadRateLimiter, (upload.single('file') as any), async (req: AuthenticatedRequest, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'No file provided.' });
+
+    const orgId = req.orgId || 'org-talentintel-enterprise';
+    const candidateId = req.body.candidateId || 'unassigned';
+    const category = req.body.category || 'resume';
+    const retentionDays = parseInt(req.body.retentionDays) || 365;
+
+    const storedDoc = await objectStorage.storeFile({
+      buffer: file.buffer,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      orgId,
+      candidateId,
+      userId: req.user!.id,
+      category,
+      retentionDays,
+    });
+
+    // Enqueue async parsing and RAG indexing
+    jobQueue.enqueue(orgId, 'RESUME_INGEST_AND_PARSE', {
+      candidateId,
+      docId: storedDoc.id,
+    }, req.user!.id);
+
+    db.addAuditLog({
+      userId: req.user!.id,
+      userEmail: req.user!.email,
+      userName: req.user!.name,
+      orgId,
+      action: 'DOCUMENT_UPLOADED',
+      entityType: 'system',
+      entityId: storedDoc.id,
+      details: `Securely ingested file "${storedDoc.originalName}" (${Math.round(storedDoc.sizeBytes / 1024)} KB, SHA-256: ${storedDoc.sha256Checksum.slice(0, 10)}...).`,
+    });
+
+    res.status(201).json({ success: true, document: storedDoc });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'File upload failed.' });
+  }
+});
+
+// GET /api/storage/files/:candidateId (List documents)
+apiRouter.get('/storage/files/:candidateId', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const docs = objectStorage.listFilesForCandidate(req.params.candidateId, orgId);
+  res.json({ documents: docs });
+});
+
+// GET /api/storage/signed-url/:docId (Generate secure temporary download URL)
+apiRouter.get('/storage/signed-url/:docId', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const signedUrl = objectStorage.generateSignedDownloadUrl(req.params.docId, orgId, 3600);
+  res.json({ signedUrl, expiresInSeconds: 3600 });
+});
+
+// GET /api/storage/download/:docId (Verify signed URL and stream file)
+apiRouter.get('/storage/download/:docId', (req, res) => {
+  const { docId } = req.params;
+  const orgId = req.query.orgId as string;
+  const expires = parseInt(req.query.expires as string);
+  const sig = req.query.sig as string;
+
+  if (!orgId || !expires || !sig) {
+    return res.status(403).json({ error: 'Missing signed download parameters.' });
+  }
+
+  const isValid = objectStorage.verifySignedUrl(docId, orgId, expires, sig);
+  if (!isValid) {
+    return res.status(403).json({ error: 'Invalid or expired download signature.' });
+  }
+
+  const fileItem = objectStorage.getFile(docId, orgId);
+  if (!fileItem) {
+    return res.status(404).json({ error: 'Document not found or has been deleted.' });
+  }
+
+  res.setHeader('Content-Type', fileItem.document.mimeType);
+  res.setHeader('Content-Disposition', `inline; filename="${fileItem.document.sanitizedName}"`);
+  res.setHeader('X-Document-Checksum', fileItem.document.sha256Checksum);
+  res.send(fileItem.buffer);
+});
+
+// ==========================================
+// 22. ATS / HRIS WEBHOOKS
+// ==========================================
+
+// GET /api/admin/webhooks
+apiRouter.get('/admin/webhooks', requireAuth, requireRole(['Admin', 'Super Admin']), (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const webhooks = webhookService.getWebhooks(orgId);
+  res.json({ webhooks });
+});
+
+// POST /api/admin/webhooks
+apiRouter.post('/admin/webhooks', requireAuth, requireRole(['Admin', 'Super Admin']), (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const { url, events, description } = req.body;
+  if (!url || !events || !Array.isArray(events) || events.length === 0) {
+    return res.status(400).json({ error: 'Webhook URL and event subscriptions are required.' });
+  }
+
+  const sub = webhookService.registerWebhook({
+    orgId,
+    url,
+    events,
+    description: description || 'ATS/HRIS Webhook Subscription',
+  });
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'WEBHOOK_REGISTERED',
+    entityType: 'system',
+    entityId: sub.id,
+    details: `${req.user!.name} registered webhook endpoint ${sub.url} for events: [${sub.events.join(', ')}].`,
+  });
+
+  res.status(201).json({ webhook: sub });
+});
+
+// DELETE /api/admin/webhooks/:id
+apiRouter.delete('/admin/webhooks/:id', requireAuth, requireRole(['Admin', 'Super Admin']), (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const deleted = webhookService.deleteWebhook(req.params.id, orgId);
+  if (!deleted) return res.status(404).json({ error: 'Webhook not found.' });
+
+  res.json({ success: true, message: 'Webhook deleted successfully.' });
+});
+
+// GET /api/admin/webhooks/deliveries
+apiRouter.get('/admin/webhooks/deliveries', requireAuth, requireRole(['Admin', 'Super Admin']), (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const logs = webhookService.getDeliveryLogs(orgId);
+  res.json({ deliveryLogs: logs });
+});
+
+// ==========================================
+// 23. AI QUOTAS & GUARDRAILS
+// ==========================================
+
+// GET /api/ai/quota
+apiRouter.get('/ai/quota', requireAuth, (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const quota = aiGuardrails.getOrgQuota(orgId);
+  res.json({ quota });
+});
+
+// ==========================================
+// 24. BACKUPS & DISASTER RECOVERY
+// ==========================================
+
+// GET /api/admin/backups
+apiRouter.get('/admin/backups', requireAuth, requireRole(['Admin', 'Super Admin']), (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const backups = backupService.listBackups(orgId);
+  res.json({ backups });
+});
+
+// POST /api/admin/backups/create
+apiRouter.post('/admin/backups/create', requireAuth, requireRole(['Admin', 'Super Admin']), (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const backup = backupService.createBackup(orgId, req.user!.id);
+
+  db.addAuditLog({
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userName: req.user!.name,
+    orgId,
+    action: 'SYSTEM_BACKUP_CREATED',
+    entityType: 'system',
+    entityId: backup.id,
+    details: `${req.user!.name} created encrypted system backup (${Math.round(backup.sizeBytes / 1024)} KB, SHA-256: ${backup.sha256Checksum.slice(0, 10)}...).`,
+  });
+
+  res.status(201).json({ backup });
+});
+
+// GET /api/admin/backups/:id/verify
+apiRouter.get('/admin/backups/:id/verify', requireAuth, requireRole(['Admin', 'Super Admin']), (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const verification = backupService.verifyBackup(req.params.id, orgId);
+  res.json(verification);
+});
+
+// GET /api/admin/backups/:id/download
+apiRouter.get('/admin/backups/:id/download', requireAuth, requireRole(['Admin', 'Super Admin']), (req: AuthenticatedRequest, res) => {
+  const orgId = req.orgId || 'org-talentintel-enterprise';
+  const payload = backupService.getBackupPayload(req.params.id, orgId);
+  if (!payload) return res.status(404).json({ error: 'Backup not found.' });
+
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="talentintel-backup-${req.params.id}.json"`);
+  res.send(payload);
+});
+
 

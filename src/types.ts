@@ -1,6 +1,78 @@
 export type VerificationStatus = 'verified' | 'unverified' | 'exaggerated' | 'flagged';
 
-export type UserRole = 'Admin' | 'HR' | 'Recruiter' | 'Hiring Manager' | 'Interviewer';
+export type UserRole = 
+  | 'Super Admin' 
+  | 'Admin' 
+  | 'HR' 
+  | 'Recruiter' 
+  | 'Hiring Manager' 
+  | 'Interviewer' 
+  | 'HR Reviewer' 
+  | 'Viewer';
+
+export type AppPermission = 
+  | 'candidate:view'
+  | 'candidate:create'
+  | 'candidate:update'
+  | 'candidate:delete'
+  | 'candidate:analyze'
+  | 'candidate:verify'
+  | 'decision:view'
+  | 'decision:create'
+  | 'decision:override'
+  | 'interview:evaluate'
+  | 'collaboration:comment'
+  | 'assignment:manage'
+  | 'analytics:view'
+  | 'audit:view'
+  | 'admin:manage_users'
+  | 'admin:manage_roles'
+  | 'admin:manage_policies'
+  | 'data:export'
+  | 'data:delete';
+
+export const ROLE_PERMISSIONS: Record<UserRole, AppPermission[]> = {
+  'Super Admin': [
+    'candidate:view', 'candidate:create', 'candidate:update', 'candidate:delete',
+    'candidate:analyze', 'candidate:verify', 'decision:view', 'decision:create', 'decision:override',
+    'interview:evaluate', 'collaboration:comment', 'assignment:manage', 'analytics:view', 'audit:view',
+    'admin:manage_users', 'admin:manage_roles', 'admin:manage_policies', 'data:export', 'data:delete'
+  ],
+  'Admin': [
+    'candidate:view', 'candidate:create', 'candidate:update', 'candidate:delete',
+    'candidate:analyze', 'candidate:verify', 'decision:view', 'decision:create', 'decision:override',
+    'interview:evaluate', 'collaboration:comment', 'assignment:manage', 'analytics:view', 'audit:view',
+    'admin:manage_users', 'admin:manage_roles', 'admin:manage_policies', 'data:export', 'data:delete'
+  ],
+  'HR': [
+    'candidate:view', 'candidate:create', 'candidate:update',
+    'candidate:analyze', 'candidate:verify', 'decision:view', 'decision:create', 'decision:override',
+    'interview:evaluate', 'collaboration:comment', 'assignment:manage', 'analytics:view', 'audit:view',
+    'data:export'
+  ],
+  'Hiring Manager': [
+    'candidate:view', 'candidate:update',
+    'candidate:analyze', 'candidate:verify', 'decision:view', 'decision:create', 'decision:override',
+    'interview:evaluate', 'collaboration:comment', 'assignment:manage', 'analytics:view', 'audit:view',
+    'data:export'
+  ],
+  'Recruiter': [
+    'candidate:view', 'candidate:create', 'candidate:update',
+    'candidate:analyze', 'candidate:verify', 'decision:view', 'decision:create',
+    'interview:evaluate', 'collaboration:comment', 'analytics:view', 'audit:view',
+    'data:export'
+  ],
+  'HR Reviewer': [
+    'candidate:view', 'candidate:analyze', 'candidate:verify', 'decision:view', 'decision:create',
+    'interview:evaluate', 'collaboration:comment', 'analytics:view'
+  ],
+  'Interviewer': [
+    'candidate:view', 'interview:evaluate', 'collaboration:comment'
+  ],
+  'Viewer': [
+    'candidate:view', 'decision:view', 'analytics:view'
+  ]
+};
 
 export type SourceAttribution = 
   | 'Candidate Provided'
@@ -18,6 +90,27 @@ export type SourceTrustLevel =
   | 'Potentially verified'
   | 'External self-reported/public'
   | 'Third-party verified';
+
+export type SourceReliabilityTier = 
+  | 'AUTHORITATIVE'
+  | 'OBSERVABLE'
+  | 'CORROBORATED'
+  | 'SELF_REPORTED'
+  | 'UNVERIFIED';
+
+export type SourceFreshness = 'FRESH' | 'STALE' | 'UNKNOWN';
+
+export type ClaimPriority = 'CRITICAL' | 'IMPORTANT' | 'SUPPORTING';
+
+export type VerificationPriorityLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+export type EvidenceVerificationState = 
+  | 'VERIFIED'
+  | 'PARTIALLY_VERIFIED'
+  | 'CANDIDATE_REPORTED'
+  | 'UNVERIFIED'
+  | 'CONFLICTING'
+  | 'INSUFFICIENT_EVIDENCE';
 
 export type ExperienceIntegritySupport = 
   | 'SUPPORTED'
@@ -55,6 +148,20 @@ export interface User {
   createdAt: string;
 }
 
+export interface SourceProvenance {
+  documentId?: string;
+  documentName?: string;
+  section?: string;
+  pageNumber?: number;
+  lineRange?: string;
+  commitSha?: string;
+  repoUrl?: string;
+  credentialId?: string;
+  registryUrl?: string;
+  extractedAt: string;
+  contentReference?: string;
+}
+
 export interface EvidenceRecord {
   id: string;
   claimId?: string;
@@ -67,6 +174,7 @@ export interface EvidenceRecord {
   strength: EvidenceStrength;
   confidence: number; // 0-100
   attribution: SourceAttribution;
+  provenance?: SourceProvenance;
 }
 
 export interface DetailedClaim {
@@ -79,8 +187,101 @@ export interface DetailedClaim {
   created_at: string;
   confidence: 'high' | 'medium' | 'low';
   verification_status: VerificationStatus | 'corroborated' | 'conflicting';
+  verification_state?: EvidenceVerificationState;
+  claim_priority?: ClaimPriority;
   integrity_support: ExperienceIntegritySupport;
   evidence_ids: string[];
+  provenance?: SourceProvenance;
+  counterEvidenceIds?: string[];
+  recommendedAction?: string;
+}
+
+export interface EvidenceCoverageMetrics {
+  overallCoverageScore: number; // 0-100
+  verifiedPercentage: number;
+  partialPercentage: number;
+  unverifiedPercentage: number;
+  conflictingPercentage: number;
+  criticalClaimsCoverageScore: number; // 0-100
+  verifiedClaimsCount: number;
+  partialClaimsCount: number;
+  unverifiedClaimsCount: number;
+  conflictingClaimsCount: number;
+  totalClaimsCount: number;
+  coverageAssessment: string;
+}
+
+export interface VerificationQueueItem {
+  id: string;
+  candidateId: string;
+  claimId?: string;
+  title: string;
+  description: string;
+  claimPriority: ClaimPriority;
+  verificationPriority: VerificationPriorityLevel;
+  priorityScore: number; // 0-100 calculated from factors
+  priorityRationale: string; // "Required core skill with weak evidence" / "Employment date conflict"
+  conflictSeverity: 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
+  evidenceWeakness: 'WEAK' | 'INSUFFICIENT' | 'CONFLICTING' | 'MODERATE' | 'NONE';
+  decisionRelevance: 'HIGH' | 'MEDIUM' | 'LOW';
+  status: 'PENDING' | 'VERIFIED' | 'INFO_REQUESTED' | 'REVIEWED' | 'DISMISSED';
+  resolutionNotes?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  evidenceSources: string[];
+  suggestedAction: string;
+  category: 'timeline' | 'skill' | 'project' | 'certification' | 'experience';
+}
+
+export interface SourceReliabilityProfile {
+  sourceType: string;
+  sourceName: string;
+  url?: string;
+  reliabilityTier: SourceReliabilityTier;
+  reliabilityExplanation: string;
+  freshness: SourceFreshness;
+  lastAudited: string;
+  provenanceDetails?: SourceProvenance;
+  claimsCount: number;
+  evidenceCount: number;
+}
+
+export interface SkillVerificationRecord {
+  skillName: string;
+  claimedProficiency: 'expert' | 'proficient' | 'familiar';
+  isJobRequired: boolean;
+  evidenceStatus: 'STRONG_EVIDENCE' | 'MODERATE_EVIDENCE' | 'INSUFFICIENT_EVIDENCE' | 'NO_EVIDENCE_FOUND';
+  evidenceSources: string[];
+  confidenceScore: number; // 0-100
+  evidenceStrength: EvidenceStrength;
+  absenceOfEvidenceNotice?: string;
+  groundedProjects: string[];
+  demonstratedTenureYears?: number;
+}
+
+export interface EvidenceGraphNode {
+  id: string;
+  label: string;
+  type: 'candidate' | 'claim' | 'source' | 'evidence' | 'company' | 'skill' | 'project' | 'education' | 'certification';
+  status?: string;
+  priority?: ClaimPriority | VerificationPriorityLevel;
+  confidence?: number;
+  details?: string;
+  sourceAttribution?: SourceAttribution;
+}
+
+export interface EvidenceGraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  relationship: 'CLAIMS' | 'SUPPORTED_BY' | 'CONTRADICTS' | 'MENTIONS' | 'WORKED_AT' | 'USED_SKILL' | 'CONTRIBUTES_TO' | 'VERIFIED_BY' | 'RELATED_TO';
+  strength?: EvidenceStrength;
+  notes?: string;
+}
+
+export interface EvidenceGraphData {
+  nodes: EvidenceGraphNode[];
+  edges: EvidenceGraphEdge[];
 }
 
 export interface CandidateCertification {
@@ -281,7 +482,7 @@ export interface AuditLog {
   userName: string;
   orgId: string;
   action: string;
-  entityType: 'candidate' | 'job' | 'claim' | 'interview' | 'system' | 'auth';
+  entityType: 'candidate' | 'job' | 'claim' | 'interview' | 'system' | 'auth' | 'user' | 'organization';
   entityId: string;
   details: string;
   timestamp: string;
@@ -367,9 +568,11 @@ export type CandidatePipelineStatus =
   | 'On Hold';
 
 export interface StageTransitionRecord {
-  stage: CandidatePipelineStatus;
-  timestamp: string;
-  changedBy: string;
+  stage: CandidatePipelineStatus | string;
+  timestamp?: string;
+  enteredAt?: string;
+  changedBy?: string;
+  updatedBy?: string;
   notes?: string;
 }
 
@@ -409,11 +612,13 @@ export interface Candidate {
   location: string;
   yearsOfExperience: number;
   targetJobId: string;
+  appliedJobId?: string;
   overallFitScore: number; // 0-100
   verificationRating: number; // 0-100
   status: 'shortlisted' | 'in_interview' | 'offer_ready' | 'review_required' | 'rejected' | string;
   pipelineStatus?: CandidatePipelineStatus;
   stageHistory?: StageTransitionRecord[];
+  decisionAudit?: any[];
   duplicateFlag?: CandidateDuplicateFlag;
   summary: string;
   salaryExpectation: string;
@@ -439,6 +644,11 @@ export interface Candidate {
   consistencyReport?: CrossSourceConsistencyReport;
   documents?: CandidateDocumentRecord[];
   explainableRecommendation?: ExplainableAIRecommendation;
+  evidenceCoverage?: EvidenceCoverageMetrics;
+  verificationQueue?: VerificationQueueItem[];
+  sourceReliability?: SourceReliabilityProfile[];
+  skillVerifications?: SkillVerificationRecord[];
+  evidenceGraphData?: EvidenceGraphData;
   blindHiringScore: {
     biasChecked: boolean;
     diversityCalibration: string;
@@ -544,3 +754,232 @@ export interface HRPipelineAnalytics {
   topSkillsInDemand: { skill: string; candidateCount: number; matchRate: number }[];
   avgTimeToEvaluateDays: number;
 }
+
+// --- Prompt 4 Enterprise Types ---
+
+export type HumanDecisionType = 
+  | 'SHORTLIST' 
+  | 'MOVE_TO_INTERVIEW' 
+  | 'REQUEST_VERIFICATION' 
+  | 'PUT_ON_HOLD' 
+  | 'ADVANCE_STAGE' 
+  | 'PROCEED_TO_OFFER'
+  | 'REJECT_CANDIDATE'
+  | 'REQUEST_SECOND_OPINION'
+  | 'CALIBRATION_OVERRIDE'
+  | 'REJECT' 
+  | 'WITHDRAW' 
+  | 'FINALIZE_HIRE';
+
+export interface HumanDecisionRecord {
+  id: string;
+  candidateId: string;
+  jobId: string;
+  orgId: string;
+  actorId: string;
+  actorName: string;
+  actorRole: UserRole;
+  decisionType: HumanDecisionType;
+  previousState: CandidatePipelineStatus | string;
+  newState: CandidatePipelineStatus | string;
+  reason: string;
+  evidenceContext: string[];
+  isOverride: boolean;
+  aiRecommendationSnapshot?: {
+    recommendation: string;
+    fitScore: number;
+    confidence: string;
+  };
+  overrideReason?: string;
+  timestamp: string;
+}
+
+export type DecisionReadinessLevel = 'READY_FOR_DECISION' | 'ACTION_REQUIRED' | 'INSUFFICIENT_DATA';
+
+export interface DecisionReadinessMetric {
+  status: DecisionReadinessLevel;
+  requiredSkillsVerifiedPercentage: number;
+  evidenceCoverageScore: number;
+  interviewCompletedCount: number;
+  requiredInterviewsCount: number;
+  openVerificationIssuesCount: number;
+  policyCompliance: {
+    requirement: string;
+    met: boolean;
+    details: string;
+  }[];
+  summary: string;
+}
+
+export interface DecisionReadinessScore {
+  candidateId: string;
+  overallReadinessScore: number;
+  readinessStatus: 'READY' | 'GATED' | 'BLOCKED';
+  stageGates: {
+    gateName: string;
+    satisfied: boolean;
+    details: string;
+  }[];
+}
+
+export type AssignmentTaskType = 
+  | 'EVIDENCE_VERIFICATION' 
+  | 'TECHNICAL_REVIEW' 
+  | 'INTERVIEW_EVALUATION' 
+  | 'FINAL_DECISION'
+  | 'EVIDENCE_AUDIT'
+  | 'BACKGROUND_CHECK'
+  | 'COMPENSATION_BENCHMARK'
+  | 'HIRING_DECISION';
+
+export type AssignmentStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'OVERDUE' | 'DECLINED';
+
+export interface CandidateReviewAssignment {
+  id: string;
+  candidateId: string;
+  candidateName: string;
+  jobId: string;
+  orgId: string;
+  assignedToUserId: string;
+  assignedToUserName: string;
+  assignedByUserId: string;
+  assignedByUserName: string;
+  taskType: AssignmentTaskType;
+  status: AssignmentStatus;
+  dueDate: string;
+  assignedAt: string;
+  completedAt?: string;
+  notes?: string;
+}
+
+export type NoteCategory = 
+  | 'GENERAL' 
+  | 'EVIDENCE_NOTE' 
+  | 'INTERVIEW_FEEDBACK' 
+  | 'VERIFICATION_FLAG' 
+  | 'DECISION_RATIONALE'
+  | 'General'
+  | 'Technical Review'
+  | 'Interview Feedback'
+  | 'Compensation'
+  | 'Integrity Flag'
+  | 'Hiring Committee';
+
+export interface CandidateCollaborativeNote {
+  id: string;
+  candidateId: string;
+  orgId: string;
+  authorId: string;
+  authorName: string;
+  authorRole: UserRole;
+  authorAvatar: string;
+  content: string;
+  mentions?: string[];
+  category: NoteCategory;
+  isConfidential?: boolean;
+  tags?: string[];
+  createdAt: string;
+}
+
+export type CollaborativeNote = CandidateCollaborativeNote;
+
+export interface JobHiringPolicy {
+  policyVersion: number;
+  name?: string;
+  jobId?: string;
+  minimumOverallFitScore?: number;
+  minimumVerificationRating?: number;
+  requiredInterviewRounds: number;
+  requireHumanOverrideReason?: boolean;
+  autoAdvanceQualifiedScores?: number;
+  mandatorySkills?: string[];
+  mandatoryCertifications?: string[];
+  requiredSkillWeight?: number;
+  preferredSkillWeight?: number;
+  experienceWeight?: number;
+  evidenceWeight?: number;
+  projectsWeight?: number;
+  minExperienceYears?: number;
+  minEvidenceCoverage?: number;
+  allowAIAutoShortlist?: boolean;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+export interface UserInvitation {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  orgId: string;
+  invitedBy: string;
+  token: string;
+  status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface DataGovernancePolicy {
+  retentionPeriodDays: number;
+  autoMaskPIIAfterDays?: number | null;
+  requireHumanOverrideJustification?: boolean;
+  anonymizeOnDelete?: boolean;
+  dataExportAllowed?: boolean;
+  auditLogRetentionDays?: number;
+  updatedAt: string;
+}
+
+export interface HumanVsAIAnalytics {
+  totalAIRecommendations?: number;
+  totalDecisionsRecorded: number;
+  alignedDecisionsCount: number;
+  acceptedDecisionsCount?: number;
+  overrideDecisionsCount: number;
+  overriddenDecisionsCount?: number;
+  overallAlignmentRate: number;
+  acceptanceRate?: number;
+  overrideRate: number;
+  commonOverrideReasons: { reason: string; count: number; percentage: number }[];
+  topOverrideReasons?: { reason: string; count: number; percentage: number }[];
+  overridesByRole?: { role: string; overridesCount: number; totalCount: number; rate: number }[];
+  overridesByStage?: { stage: string; overridesCount: number }[];
+}
+
+export interface FairnessQualityMetrics {
+  demographicParityStatus: 'COMPLIANT' | 'CALIBRATION_REQUIRED';
+  blindScreeningParityScore: number;
+  interviewerConsistencyScore: number;
+  verificationCompletionRate: number;
+  averageTimeToDecisionDays: number;
+  parityByExperienceCohort?: {
+    cohort: string;
+    candidateCount: number;
+    shortlistRate: number;
+    avgEvidenceRating: number;
+  }[];
+  parityBySourceChannel?: {
+    source: string;
+    candidateCount: number;
+    shortlistRate: number;
+  }[];
+  aiModelQuality?: {
+    groundingScore: number;
+    citationAccuracyRate: number;
+    hallucinationSignalsDetected: number;
+    avgLatencyMs: number;
+    totalTokensConsumed: number;
+    modelFailureRate: number;
+  };
+}
+
+export interface CandidateActivityTimelineItem {
+  id: string;
+  type: 'intake' | 'claims_extracted' | 'verification' | 'interview' | 'review' | 'note' | 'stage_transition' | 'decision';
+  title: string;
+  description: string;
+  actor: string;
+  actorRole?: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
+}
+

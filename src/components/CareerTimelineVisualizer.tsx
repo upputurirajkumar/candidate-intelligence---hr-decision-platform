@@ -64,6 +64,25 @@ export const CareerTimelineVisualizer: React.FC<CareerTimelineVisualizerProps> =
         </div>
       </div>
 
+      {/* Timeline Gaps Callout if present */}
+      {candidate.timelineGaps && candidate.timelineGaps.length > 0 && (
+        <div className="space-y-2">
+          {candidate.timelineGaps.map((gap) => (
+            <div key={gap.id} className="p-3 bg-amber-950/20 border border-amber-900/40 rounded-2xl flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-amber-200">
+                  <strong>Observed Gap:</strong> {gap.durationMonths} months between {gap.startDate} and {gap.endDate} ({gap.surroundingRoles})
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800 shrink-0">
+                Confidence: {gap.confidence}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Animated Vertical Timeline Tree */}
       <div className="relative pl-6 sm:pl-8 space-y-8 before:absolute before:inset-0 before:left-3 sm:before:left-4 before:w-0.5 before:bg-gradient-to-b before:from-indigo-500 before:via-cyan-500 before:to-emerald-500">
         {experiences.map((exp, idx) => {

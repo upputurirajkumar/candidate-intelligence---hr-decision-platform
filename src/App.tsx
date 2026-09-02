@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Candidate, JobProfile, InterviewQuestion, VerificationStatus, User } from './types';
 import { GlobalNavbar, AppRoute } from './components/navigation/GlobalNavbar';
 import { LandingPage } from './pages/LandingPage';
@@ -12,9 +12,13 @@ import { AuthModal } from './components/AuthModal';
 import { RoleUniverseModal } from './components/RoleUniverseModal';
 import { AIProcessingPipelineModal } from './components/AIProcessingPipelineModal';
 import { FuturisticBackground } from './components/FuturisticBackground';
+import { ToastProvider, useToast } from './components/common/ToastSystem';
+import { GlobalCommandPalette } from './components/common/GlobalCommandPalette';
+import { UIStateInspector } from './components/common/UIStateInspector';
 import { authenticatedFetch, getStoredToken, getStoredUser, clearAuthSession, setAuthSession } from './lib/api';
 
-export default function App() {
+function AppContent() {
+  const toast = useToast();
   const [currentRoute, setCurrentRoute] = useState<AppRoute>('home');
   const [currentUser, setCurrentUser] = useState<User | null>(getStoredUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -28,8 +32,29 @@ export default function App() {
   const [isIntakeOpen, setIsIntakeOpen] = useState<boolean>(false);
   const [isUniverseOpen, setIsUniverseOpen] = useState<boolean>(false);
   const [isAIProcessingOpen, setIsAIProcessingOpen] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+  const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(false);
   const [processingCandidateName, setProcessingCandidateName] = useState<string>('Candidate Pipeline');
   const [loadingData, setLoadingData] = useState<boolean>(false);
+
+  // Keyboard shortcut listener for Cmd+K (Command Palette) & Ctrl+Shift+D (State Inspector)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      } else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setIsInspectorOpen((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        if (isCommandPaletteOpen) setIsCommandPaletteOpen(false);
+        else if (isInspectorOpen) setIsInspectorOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCommandPaletteOpen, isInspectorOpen]);
 
   // Sync route with browser window path / history
   useEffect(() => {
@@ -106,7 +131,7 @@ export default function App() {
     initSessionAndData();
   }, []);
 
-  const loadPlatformData = async () => {
+  const loadPlatformData = useCallback(async () => {
     setLoadingData(true);
     try {
       const [jobsRes, candsRes] = await Promise.all([
@@ -120,20 +145,21 @@ export default function App() {
 
         if (jobsData.jobs && jobsData.jobs.length > 0) {
           setJobs(jobsData.jobs);
-          if (!selectedJob) setSelectedJob(jobsData.jobs[0]);
+          setSelectedJob((prev) => prev || jobsData.jobs[0]);
         }
 
         if (candsData.candidates && candsData.candidates.length > 0) {
           setCandidates(candsData.candidates);
-          if (!selectedCandidateId) setSelectedCandidateId(candsData.candidates[0].id);
+          setSelectedCandidateId((prev) => prev || candsData.candidates[0].id);
         }
       }
     } catch (err) {
       console.error('Failed to load candidate platform data:', err);
+      toast.error('Sync Error', 'Failed to refresh candidate database records.');
     } finally {
       setLoadingData(false);
     }
-  };
+  }, [toast]);
 
   const handleNavigate = (route: AppRoute, params?: { candidateId?: string }) => {
     setCurrentRoute(route);
@@ -165,6 +191,7 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await authenticatedFetch('/api/auth/logout', { method: 'POST' });
+      toast.info('Signed Out', 'Your enterprise session has been safely closed.');
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
@@ -174,7 +201,7 @@ export default function App() {
     }
   };
 
-  const activeCandidate = candidates.find(c => c.id === selectedCandidateId) || candidates[0];
+  const activeCandidate = candidates.find(c => c.id === selectedCandidateId) || candidates[0] || null;
 
   const handleStatusChange = async (newStatus: Candidate['status']) => {
     if (!activeCandidate) return;
@@ -190,9 +217,14 @@ export default function App() {
       const data = await res.json();
       if (data.candidate) {
         setCandidates(prev => prev.map(c => (c.id === data.candidate.id ? data.candidate : c)));
+        toast.success(
+          'Pipeline Stage Updated',
+          `${activeCandidate.name} moved to stage '${newStatus.toUpperCase()}'.`
+        );
       }
     } catch (err) {
       console.error('Failed to update candidate status:', err);
+      toast.error('Update Failed', 'Could not persist pipeline status change.');
     }
   };
 
@@ -212,9 +244,14 @@ export default function App() {
       const data = await res.json();
       if (data.candidate) {
         setCandidates(prev => prev.map(c => (c.id === data.candidate.id ? data.candidate : c)));
+        toast.success(
+          'Claim Verification Recorded',
+          `Claim marked as ${newStatus} with audit ledger trail.`
+        );
       }
     } catch (err) {
       console.error('Failed to override claim:', err);
+      toast.error('Verification Error', 'Failed to update claim verification status.');
     }
   };
 
@@ -231,12 +268,14 @@ export default function App() {
         return c;
       })
     );
+    toast.success('Question Added', `Custom interview probe appended for ${activeCandidate.name}.`);
   };
 
   const handleCandidateAdded = (newCand: Candidate) => {
     setCandidates(prev => [newCand, ...prev]);
     setSelectedCandidateId(newCand.id);
     handleNavigate('candidate', { candidateId: newCand.id });
+    toast.success('Candidate Ingested', `Comprehensive intelligence dossier generated for ${newCand.name}.`);
   };
 
   return (
@@ -253,6 +292,8 @@ export default function App() {
         onLogout={handleLogout}
         onOpenCopilot={() => setIsCopilotOpen(true)}
         onOpenUniverse={() => setIsUniverseOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenInspector={() => setIsInspectorOpen(true)}
         selectedJob={selectedJob}
       />
 
@@ -276,17 +317,23 @@ export default function App() {
             candidates={candidates}
             jobs={jobs}
             selectedJob={selectedJob}
-            onSelectJob={(j) => setSelectedJob(j)}
+            onSelectJob={(j) => {
+              setSelectedJob(j);
+              toast.info('Active Requisition Changed', `Now focusing candidate pool on ${j.title}.`);
+            }}
             onUpdateJob={(updated) => {
               setSelectedJob(updated);
               setJobs(jobs.map(j => (j.id === updated.id ? updated : j)));
+              toast.success('Requisition Updated', `${updated.title} profile saved.`);
             }}
             onJobCreated={(newJob) => {
               setJobs(prev => [newJob, ...prev]);
               setSelectedJob(newJob);
+              toast.success('Requisition Created', `New requisition ${newJob.title} published.`);
             }}
             onJobDeleted={(jobId) => {
               setJobs(prev => prev.filter(j => j.id !== jobId));
+              toast.warning('Requisition Removed', 'Target job requisition deleted.');
             }}
             onSelectCandidate={handleSelectCandidate}
             onOpenIntake={() => setIsIntakeOpen(true)}
@@ -297,7 +344,10 @@ export default function App() {
               setProcessingCandidateName(candName || 'Candidate Processing Engine');
               setIsAIProcessingOpen(true);
             }}
-            onRefreshData={loadPlatformData}
+            onRefreshData={async () => {
+              await loadPlatformData();
+              toast.success('Platform Synchronized', 'Candidate records and match benchmarks updated.');
+            }}
             currentUser={currentUser}
           />
         )}
@@ -308,6 +358,7 @@ export default function App() {
               candidate={activeCandidate}
               candidates={candidates}
               job={selectedJob}
+              currentUser={currentUser}
               onBackToWorkspace={() => handleNavigate('platform')}
               onSelectCandidate={(id) => {
                 setSelectedCandidateId(id);
@@ -375,11 +426,13 @@ export default function App() {
           setSelectedJob(job);
           setIsUniverseOpen(false);
           handleNavigate('platform');
+          toast.info('Role Requisition Selected', `Focused pipeline on ${job.title}.`);
         }}
         onSelectJob={(job) => {
           setSelectedJob(job);
           setIsUniverseOpen(false);
           handleNavigate('platform');
+          toast.info('Role Requisition Selected', `Focused pipeline on ${job.title}.`);
         }}
         onSelectCandidate={(candId) => {
           setIsUniverseOpen(false);
@@ -393,7 +446,6 @@ export default function App() {
         onClose={() => setIsAIProcessingOpen(false)}
         candidateName={processingCandidateName}
         onComplete={() => {
-          // Keep active view refreshed
           loadPlatformData();
         }}
       />
@@ -405,8 +457,64 @@ export default function App() {
         onAuthenticated={(user) => {
           setCurrentUser(user);
           loadPlatformData();
+          toast.success('Authenticated', `Welcome back, ${user.name || user.email}!`);
+        }}
+      />
+
+      {/* Global Quick Action Command Palette */}
+      <GlobalCommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        candidates={candidates}
+        jobs={jobs}
+        selectedJob={selectedJob}
+        currentUser={currentUser}
+        onSelectCandidate={(id) => handleSelectCandidate(id)}
+        onSelectJob={(job) => {
+          setSelectedJob(job);
+          toast.info('Requisition Selected', `Switched active focus to ${job.title}.`);
+        }}
+        onNavigate={handleNavigate}
+        onOpenIntake={() => setIsIntakeOpen(true)}
+        onOpenIngestion={() => setIsIngestionOpen(true)}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
+        onOpenUniverse={() => setIsUniverseOpen(true)}
+        onOpenInspector={() => setIsInspectorOpen(true)}
+        onRefreshData={async () => {
+          await loadPlatformData();
+          toast.success('Data Synchronized', 'All candidate benchmarks and dossiers updated.');
+        }}
+      />
+
+      {/* UI State Inspector Panel */}
+      <UIStateInspector
+        isOpen={isInspectorOpen}
+        onClose={() => setIsInspectorOpen(false)}
+        currentRoute={currentRoute}
+        selectedJob={selectedJob}
+        activeCandidate={activeCandidate}
+        candidatesCount={candidates.length}
+        jobsCount={jobs.length}
+        currentUser={currentUser}
+        overlays={{
+          isCopilotOpen,
+          isIntakeOpen,
+          isIngestionOpen,
+          isUniverseOpen,
+          isAIProcessingOpen,
+          isAuthModalOpen,
+          isCommandPaletteOpen,
         }}
       />
     </div>
   );
 }
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
+  );
+}
+

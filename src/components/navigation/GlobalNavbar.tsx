@@ -12,7 +12,8 @@ import {
   Briefcase,
   ExternalLink,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Sliders
 } from 'lucide-react';
 
 export type AppRoute = 
@@ -29,6 +30,8 @@ interface GlobalNavbarProps {
   onLogout: () => void;
   onOpenCopilot: () => void;
   onOpenUniverse?: () => void;
+  onOpenCommandPalette?: () => void;
+  onOpenInspector?: () => void;
   selectedJob?: JobProfile | null;
 }
 
@@ -40,6 +43,8 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   onLogout,
   onOpenCopilot,
   onOpenUniverse,
+  onOpenCommandPalette,
+  onOpenInspector,
   selectedJob,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -128,6 +133,22 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
 
           {/* Right Action Area */}
           <div className="flex items-center gap-2.5">
+            {/* Quick Command Palette Trigger */}
+            {onOpenCommandPalette && (
+              <button
+                id="btn-navbar-command-palette"
+                onClick={onOpenCommandPalette}
+                className="hidden lg:flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 px-2.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer"
+                title="Open Command Palette (Cmd+K / Ctrl+K)"
+              >
+                <Zap className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="text-[11px] font-medium">Quick Actions</span>
+                <kbd className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-950 text-slate-400 border border-slate-700">
+                  ⌘K
+                </kbd>
+              </button>
+            )}
+
             {/* Global HR Copilot Launch (if authenticated) */}
             {currentUser && (
               <button
@@ -166,6 +187,17 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                     <div className="text-[10px] text-cyan-400 font-semibold">{currentUser?.role || 'HR'}</div>
                   </div>
                 </div>
+
+                {onOpenInspector && (
+                  <button
+                    id="navbar-btn-inspector"
+                    onClick={onOpenInspector}
+                    title="UI State Inspector (Ctrl+Shift+D)"
+                    className="p-1.5 text-slate-400 hover:text-violet-300 hover:bg-slate-900 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                  </button>
+                )}
 
                 <button
                   onClick={onLogout}

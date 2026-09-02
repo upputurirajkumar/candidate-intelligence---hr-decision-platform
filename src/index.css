@@ -94,3 +94,14 @@
   border-radius: 0 4px 4px 0;
 }
 
+/* Layer & Overlay Hierarchy Reference:
+   z-0: Background canvas / visuals
+   z-10: Page layout / content cards
+   z-20: Sub-navigation & breadcrumb strips
+   z-40: Global navigation header
+   z-50: Standard modals & slide drawers (Copilot, Intake, Ingestion, Role Universe)
+   z-60: High-priority prompts (Command Palette, State Inspector, Unsaved Changes)
+   z-70: Non-blocking Toast notification container
+*/
+
+

@@ -20,7 +20,18 @@ import {
   auditCandidateCertifications,
   evaluateSemanticSkillMatch,
   generateEvidenceGroundedSummary,
+  calculateEvidenceCoverage,
+  generateVerificationQueue,
+  buildSourceReliabilityProfiles,
+  verifyCandidateSkillsWithAbsenceDistinction,
+  buildEvidenceGraph,
 } from '../services/integrityEngine';
+import { observability } from '../services/observability';
+import { objectStorage } from '../services/objectStorage';
+import { jobQueue } from '../services/jobQueue';
+import { webhookService } from '../services/webhookService';
+import { aiGuardrails, StructuredAnalysisSchema } from '../services/aiGuardrails';
+import { backupService } from '../services/backupService';
 
 let totalTests = 0;
 let passedTests = 0;
@@ -380,6 +391,45 @@ async function runAllTests() {
     const skillMatch = evaluateSemanticSkillMatch(testCandidate, testJob);
     assert(skillMatch.strongMatches.length === 3, 'Identified all 3 strong required skill matches');
     assert(skillMatch.missingSkills.length === 0, 'Identified 0 missing required skills');
+
+    // Evidence Coverage Metrics Test
+    const evidenceCoverage = calculateEvidenceCoverage(testCandidate, claims);
+    assert(typeof evidenceCoverage.overallCoverageScore === 'number' && evidenceCoverage.overallCoverageScore >= 0 && evidenceCoverage.overallCoverageScore <= 100, 'Calculated overall evidence coverage score (0-100)');
+    assert(evidenceCoverage.verifiedPercentage + evidenceCoverage.partialPercentage + evidenceCoverage.unverifiedPercentage + evidenceCoverage.conflictingPercentage === 100, 'Coverage percentages sum to 100%');
+    assert(evidenceCoverage.coverageAssessment.length > 0, 'Generated explanatory evidence coverage assessment');
+
+    // Verification Priority Queue Test
+    const queue = generateVerificationQueue(testCandidate, claims, consistency, testJob);
+    assert(queue.length > 0, `Generated verification queue with ${queue.length} prioritized tasks`);
+    assert(queue[0].priorityScore >= (queue[1]?.priorityScore || 0), 'Verification queue sorted descending by calculated priority score');
+    assert(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(queue[0].verificationPriority), 'Assigned valid verification priority tier');
+    assert(queue.every(q => q.status === 'PENDING'), 'New queue items initialized in PENDING state');
+
+    // Source Reliability Profiles Test
+    const sourceProfiles = buildSourceReliabilityProfiles(testCandidate);
+    assert(sourceProfiles.length >= 2, `Built ${sourceProfiles.length} source reliability profiles`);
+    assert(sourceProfiles.some(p => p.reliabilityTier === 'OBSERVABLE' || p.reliabilityTier === 'CORROBORATED'), 'Correctly profiled observable and corroborated source tiers');
+    assert(sourceProfiles.every(p => ['FRESH', 'STALE', 'UNKNOWN'].includes(p.freshness)), 'Assigned valid source data freshness');
+
+    // Skill Verifications with Absence-of-Evidence Distinction
+    const skillVerifications = verifyCandidateSkillsWithAbsenceDistinction(testCandidate, testJob);
+    assert(skillVerifications.length > 0, `Generated ${skillVerifications.length} skill verification records`);
+    const kubernetesSkill = skillVerifications.find(s => s.skillName.toLowerCase().includes('kubernetes'));
+    assert(kubernetesSkill !== undefined && kubernetesSkill.evidenceStatus === 'STRONG_EVIDENCE', 'Kubernetes skill verified with Strong Evidence from public repo');
+    
+    // Test that unverified skills receive explicit absence-of-evidence safety notice
+    const unverifiedSkill = skillVerifications.find(s => s.evidenceStatus === 'INSUFFICIENT_EVIDENCE');
+    if (unverifiedSkill) {
+      assert(unverifiedSkill.absenceOfEvidenceNotice !== undefined && unverifiedSkill.absenceOfEvidenceNotice.includes('does not imply candidate lacks proficiency'), 'Absence of evidence notice explicitly protects candidate from negative bias');
+    }
+
+    // Evidence Graph Data Test
+    const evidenceGraph = buildEvidenceGraph(testCandidate, claims, evidence, consistency);
+    assert(evidenceGraph.nodes.length >= 3, `Built evidence graph with ${evidenceGraph.nodes.length} nodes`);
+    assert(evidenceGraph.edges.length >= 2, `Built evidence graph with ${evidenceGraph.edges.length} edges`);
+    assert(evidenceGraph.nodes.some(n => n.type === 'candidate'), 'Evidence graph contains candidate root node');
+    assert(evidenceGraph.nodes.some(n => n.type === 'claim'), 'Evidence graph contains claim nodes');
+    assert(evidenceGraph.nodes.some(n => n.type === 'source'), 'Evidence graph contains source nodes');
   }
 
   // 6. DOCUMENT PARSING & INGESTION SECURITY TESTS
@@ -1013,6 +1063,174 @@ async function runAllTests() {
       db.deleteJob(job.id, tenantOrg);
     }
     ragStore.clearCandidateChunks(tenantOrg, e2eCand.id);
+  }
+
+  // 10. PHASE 5 ENTERPRISE PRODUCTION HARDENING SUITE
+  console.log('\n--- 10. Phase 5 Enterprise Production Hardening Suite ---');
+  {
+    const entOrg = 'org_enterprise_prod_suite';
+    const testUserId = 'usr_admin_suite';
+
+    // A. Observability & Telemetry Metrics
+    observability.log({
+      level: 'INFO',
+      traceId: 'trc-test-01',
+      requestId: 'req-test-01',
+      orgId: entOrg,
+      actorId: testUserId,
+      actorRole: 'Admin',
+      method: 'POST',
+      path: '/api/storage/upload',
+      statusCode: 201,
+      durationMs: 45,
+      message: 'Secure file ingestion completed',
+      metadata: { fileSize: 1024, secretToken: 'should-be-redacted-token' },
+    });
+
+    const logs = observability.getLogs(10, 'INFO', entOrg);
+    assert(logs.length > 0, 'Observability recorded structured log entry');
+    assert(logs[0].metadata?.secretToken === '[REDACTED]', 'Sensitive metadata fields automatically sanitized/redacted in logs');
+
+    observability.recordAICall(1500, 240, true);
+    observability.recordSecurityIncident('prompt_injection');
+    observability.recordSecurityIncident('ssrf');
+    const metrics = observability.getMetrics(2, 10, 0);
+    assert(metrics.aiTelemetry.totalCalls > 0, 'AI call metrics recorded successfully');
+    assert(metrics.aiTelemetry.totalTokensConsumed >= 1500, 'AI token consumption tracked accurately');
+    assert(metrics.securityEvents.promptInjectionAttempts >= 1, 'Security incident telemetry tracked');
+
+    // B. Secure Object Storage & Expiring Signed URLs
+    const sampleBuffer = Buffer.from('Confidential executive candidate portfolio data for enterprise hiring committee.');
+    const storedDoc = await objectStorage.storeFile({
+      buffer: sampleBuffer,
+      originalName: 'executive_portfolio.txt',
+      mimeType: 'text/plain',
+      orgId: entOrg,
+      candidateId: 'cand-exec-101',
+      userId: testUserId,
+      category: 'portfolio',
+      retentionDays: 180,
+    });
+
+    assert(storedDoc.id.startsWith('doc-'), 'Stored document generated unique secure identifier');
+    assert(storedDoc.sha256Checksum.length === 64, 'Computed SHA-256 cryptographic checksum');
+    assert(storedDoc.metadata.encryptionAlgorithm === 'AES-256-GCM', 'Document tagged with AES-256-GCM encryption standard');
+
+    const signedUrl = objectStorage.generateSignedDownloadUrl(storedDoc.id, entOrg, 3600);
+    assert(signedUrl.includes('sig=') && signedUrl.includes('expires='), 'Generated expiring signed download URL');
+
+    const urlParams = new URLSearchParams(signedUrl.split('?')[1]);
+    const expiresParam = parseInt(urlParams.get('expires') || '0');
+    const sigParam = urlParams.get('sig') || '';
+
+    const validSig = objectStorage.verifySignedUrl(storedDoc.id, entOrg, expiresParam, sigParam);
+    assert(validSig === true, 'Signed URL signature successfully verified within expiration window');
+
+    const tamperedSig = objectStorage.verifySignedUrl(storedDoc.id, entOrg, expiresParam, 'tampered-signature-invalid');
+    assert(tamperedSig === false, 'Tampered signed URL rejected with signature mismatch');
+
+    const expiredSig = objectStorage.verifySignedUrl(storedDoc.id, entOrg, Date.now() - 5000, sigParam);
+    assert(expiredSig === false, 'Expired signed URL rejected');
+
+    // Cross-tenant storage isolation
+    const crossTenantFetch = objectStorage.getFile(storedDoc.id, 'unauthorized_tenant_xyz');
+    assert(crossTenantFetch === null, 'Cross-tenant object storage retrieval strictly blocked (Zero leakage)');
+
+    // Soft deletion
+    const deletedDoc = objectStorage.softDelete(storedDoc.id, entOrg);
+    assert(deletedDoc === true, 'Soft-deleted document under data retention policy');
+    assert(objectStorage.getFile(storedDoc.id, entOrg) === null, 'Soft-deleted document no longer accessible');
+
+    // C. Async Background Job Queue
+    const job = jobQueue.enqueue(entOrg, 'INTEGRITY_AUDIT', { candidateId: 'cand-exec-101' }, testUserId);
+    assert(job.id.startsWith('job-task-'), 'Enqueued background task with tracking ID');
+    assert(job.status === 'QUEUED' || job.status === 'PROCESSING' || job.status === 'COMPLETED', 'Job initialized in valid queue status');
+
+    const retrievedJob = jobQueue.getJob(job.id, entOrg);
+    assert(retrievedJob !== null && retrievedJob.orgId === entOrg, 'Retrieved background job status');
+
+    const crossJobFetch = jobQueue.getJob(job.id, 'unauthorized_tenant_xyz');
+    assert(crossJobFetch === null, 'Cross-tenant background job lookup blocked');
+
+    const cancelJob = jobQueue.enqueue(entOrg, 'REPORT_EXPORT', {}, testUserId);
+    const wasCancelled = jobQueue.cancelJob(cancelJob.id, entOrg);
+    assert(wasCancelled === true, 'Cancelled queued background task successfully');
+
+    // D. ATS/HRIS Webhook System & HMAC Signatures
+    const webhook = webhookService.registerWebhook({
+      orgId: entOrg,
+      url: 'https://ats.workday.example/hooks/talentintel',
+      events: ['candidate.created', 'decision.recorded'],
+      description: 'Workday Enterprise Integration',
+    });
+    assert(webhook.id.startsWith('wh-sub-'), 'Registered webhook subscription');
+    assert(webhook.secret.startsWith('whsec_'), 'Generated cryptographically secure webhook secret');
+
+    const testPayload = JSON.stringify({ event: 'candidate.created', candidateId: 'cand-exec-101' });
+    const timestamp = Date.now();
+    const signature = webhookService.generateSignature(testPayload, webhook.secret, timestamp);
+    assert(signature.length === 64, 'Generated HMAC-SHA256 webhook signature');
+
+    const isValidSignature = webhookService.verifySignature(testPayload, signature, webhook.secret, timestamp);
+    assert(isValidSignature === true, 'Webhook HMAC-SHA256 signature verified');
+
+    const isTamperedWebhook = webhookService.verifySignature('{"tampered":true}', signature, webhook.secret, timestamp);
+    assert(isTamperedWebhook === false, 'Tampered webhook payload rejected');
+
+    await webhookService.dispatchEvent(entOrg, 'candidate.created', { candidateId: 'cand-exec-101', stage: 'Shortlisted' });
+    const deliveryLogs = webhookService.getDeliveryLogs(entOrg);
+    assert(deliveryLogs.length > 0, 'Webhook event dispatched and logged with delivery audit trail');
+
+    // E. AI Guardrails, Structured Schema Validation & Fallback Repair
+    const validAIOutput = {
+      overallFitScore: 88,
+      verificationRating: 92,
+      summary: 'Candidate demonstrates strong distributed systems and cloud architecture experience.',
+      keyStrengths: ['Kubernetes', 'Go microservices'],
+      potentialRisks: ['Verify sabbatical period'],
+      skills: [{ name: 'Go', level: 'expert', verified: true }],
+      reasoningTrace: ['Candidate verified via GitHub operators'],
+      interviewQuestions: ['Explain Raft log compaction.'],
+    };
+    const validated = aiGuardrails.validateOrRepairAnalysis(validAIOutput);
+    assert(validated.overallFitScore === 88, 'Validated conforming AI output against schema');
+
+    // Test malformed AI response repair
+    const malformedAIOutput = {
+      overallFitScore: 'invalid-string',
+      summary: '',
+      skills: 'not-an-array',
+    };
+    const repaired = aiGuardrails.validateOrRepairAnalysis(malformedAIOutput, {
+      overallFitScore: 78,
+      summary: 'Heuristic profile summary',
+      skills: [{ name: 'TypeScript', level: 'proficient', verified: true }],
+    });
+    assert(typeof repaired.overallFitScore === 'number' && repaired.overallFitScore === 78, 'Malformed AI output gracefully repaired with heuristic fallbacks');
+    assert(Array.isArray(repaired.skills) && repaired.skills.length > 0, 'Repaired skill array conforms to type contract');
+
+    // Quota tracking
+    const quota = aiGuardrails.getOrgQuota(entOrg);
+    assert(quota.monthlyTokenQuota > 0, 'Assigned monthly AI token quota');
+    assert(aiGuardrails.isWithinQuota(entOrg) === true, 'Confirmed tenant is within allocated token quota');
+
+    // F. System Backups & Disaster Recovery
+    const backupMeta = backupService.createBackup(entOrg, testUserId);
+    assert(backupMeta.id.startsWith('bkp-'), 'Created encrypted enterprise system backup snapshot');
+    assert(backupMeta.sha256Checksum.length === 64, 'Backup snapshot hashed with SHA-256');
+    assert(backupMeta.status === 'VERIFIED', 'Backup status verified');
+
+    const verifyResult = backupService.verifyBackup(backupMeta.id, entOrg);
+    assert(verifyResult.isValid === true, 'Backup archive integrity verified against cryptographic checksum');
+
+    const backupPayload = backupService.getBackupPayload(backupMeta.id, entOrg);
+    assert(backupPayload !== null && backupPayload.includes(entOrg), 'Retrieved complete disaster recovery payload');
+
+    const crossTenantBackup = backupService.getBackupPayload(backupMeta.id, 'unauthorized_tenant_xyz');
+    assert(crossTenantBackup === null, 'Cross-tenant backup access strictly forbidden');
+
+    // Cleanup
+    webhookService.deleteWebhook(webhook.id, entOrg);
   }
 
   console.log('\n======================================================');

@@ -1,7 +1,20 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { Candidate, JobProfile, AuditLog, User, InterviewRecord } from '../../src/types';
+import { 
+  Candidate, 
+  JobProfile, 
+  AuditLog, 
+  User, 
+  UserRole,
+  InterviewRecord,
+  HumanDecisionRecord,
+  CandidateReviewAssignment,
+  CandidateCollaborativeNote,
+  JobHiringPolicy,
+  UserInvitation,
+  DataGovernancePolicy,
+} from '../../src/types';
 import { INITIAL_CANDIDATES, INITIAL_JOBS } from '../data/initialData';
 
 const DATA_DIR = path.join(process.cwd(), '.data');
@@ -14,6 +27,12 @@ export interface DatabaseSchema {
   candidates: Candidate[];
   auditLogs: AuditLog[];
   interviewRecords: InterviewRecord[];
+  humanDecisions: HumanDecisionRecord[];
+  reviewAssignments: CandidateReviewAssignment[];
+  collaborativeNotes: CandidateCollaborativeNote[];
+  hiringPolicies: Record<string, JobHiringPolicy[]>;
+  invitations: UserInvitation[];
+  governancePolicies: Record<string, DataGovernancePolicy>;
 }
 
 function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
@@ -106,6 +125,12 @@ export class PersistentDatabase {
         if (!parsed.auditLogs) parsed.auditLogs = [];
         if (!parsed.users) parsed.users = INITIAL_USERS;
         if (!parsed.organizations) parsed.organizations = [];
+        if (!parsed.humanDecisions) parsed.humanDecisions = [];
+        if (!parsed.reviewAssignments) parsed.reviewAssignments = [];
+        if (!parsed.collaborativeNotes) parsed.collaborativeNotes = [];
+        if (!parsed.hiringPolicies) parsed.hiringPolicies = {};
+        if (!parsed.invitations) parsed.invitations = [];
+        if (!parsed.governancePolicies) parsed.governancePolicies = {};
         return parsed;
       }
     } catch (err) {
@@ -171,6 +196,92 @@ export class PersistentDatabase {
         },
       ],
       interviewRecords: [],
+      humanDecisions: [
+        {
+          id: 'dec-seed-1',
+          candidateId: 'cand-1',
+          jobId: 'job-1',
+          orgId: DEFAULT_ORG_ID,
+          actorId: 'user-manager-1',
+          actorName: 'Sarah Lin',
+          actorRole: 'Hiring Manager',
+          decisionType: 'MOVE_TO_INTERVIEW',
+          previousState: 'Screening',
+          newState: 'Interview',
+          reason: 'Strong public evidence corroborating Kubernetes and Terraform expertise. Proceed with Technical Deep-Dive.',
+          evidenceContext: ['github-repo-terraform-modules', 'aws-cert-registry-lookup'],
+          isOverride: false,
+          aiRecommendationSnapshot: {
+            recommendation: 'PROCEED_TO_TECHNICAL_REVIEW',
+            fitScore: 92,
+            confidence: 'High',
+          },
+          timestamp: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
+        },
+      ],
+      reviewAssignments: [
+        {
+          id: 'assign-seed-1',
+          candidateId: 'cand-1',
+          candidateName: 'Alex Rivera',
+          jobId: 'job-1',
+          orgId: DEFAULT_ORG_ID,
+          assignedToUserId: 'user-interviewer-1',
+          assignedToUserName: 'David Chen',
+          assignedByUserId: 'user-manager-1',
+          assignedByUserName: 'Sarah Lin',
+          taskType: 'TECHNICAL_REVIEW',
+          status: 'PENDING',
+          dueDate: new Date(Date.now() + 3600000 * 24 * 3).toISOString(),
+          assignedAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+          notes: 'Focus on distributed consensus protocols and production outage recovery cases.',
+        },
+      ],
+      collaborativeNotes: [
+        {
+          id: 'note-seed-1',
+          candidateId: 'cand-1',
+          orgId: DEFAULT_ORG_ID,
+          authorId: 'user-recruiter-1',
+          authorName: 'Marcus Vance',
+          authorRole: 'Recruiter',
+          authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+          content: 'Candidate confirmed availability for technical panel next Tuesday. Compensation expectations align with budget.',
+          mentions: ['Sarah Lin'],
+          category: 'GENERAL',
+          createdAt: new Date(Date.now() - 3600000 * 18).toISOString(),
+        },
+      ],
+      hiringPolicies: {
+        'job-1': [
+          {
+            policyVersion: 1,
+            name: 'Principal Infrastructure Policy v1',
+            requiredSkillWeight: 40,
+            preferredSkillWeight: 15,
+            experienceWeight: 20,
+            evidenceWeight: 15,
+            projectsWeight: 10,
+            minExperienceYears: 6,
+            minEvidenceCoverage: 65,
+            mandatoryCertifications: ['AWS Certified Solutions Architect - Professional'],
+            requiredInterviewRounds: 2,
+            allowAIAutoShortlist: false,
+            updatedAt: new Date().toISOString(),
+            updatedBy: 'Elena Rostova',
+          },
+        ],
+      },
+      invitations: [],
+      governancePolicies: {
+        [DEFAULT_ORG_ID]: {
+          retentionPeriodDays: 365,
+          anonymizeOnDelete: true,
+          dataExportAllowed: true,
+          auditLogRetentionDays: 730,
+          updatedAt: new Date().toISOString(),
+        },
+      },
     };
 
     this.saveDataDirect(initialData);
@@ -208,7 +319,7 @@ export class PersistentDatabase {
     return this.data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
   }
 
-  public createUser(user: Omit<User, 'id' | 'createdAt'> & { passwordPlain: string }): User {
+  public createUser(user: Omit<User, 'id' | 'createdAt' | 'avatarUrl'> & { avatarUrl?: string; passwordPlain: string }): User {
     const { hash, salt } = hashPassword(user.passwordPlain);
     const newUser: User = {
       id: `user-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
@@ -292,6 +403,14 @@ export class PersistentDatabase {
     }
     this.save();
     return candWithOrg;
+  }
+
+  public updateCandidate(id: string, updates: Partial<Candidate>, orgId: string): Candidate | undefined {
+    const candidate = this.getCandidateById(id, orgId);
+    if (!candidate) return undefined;
+    Object.assign(candidate, updates);
+    this.save();
+    return candidate;
   }
 
   public deleteCandidate(id: string, orgId: string): boolean {
@@ -381,6 +500,301 @@ export class PersistentDatabase {
   public getAllInterviewRecords(orgId: string): InterviewRecord[] {
     return this.data.interviewRecords.filter(r => r.orgId === orgId);
   }
+
+  // --- Human Decisions & Overrides (Prompt 4) ---
+  public addHumanDecision(
+    decision: Omit<HumanDecisionRecord, 'id' | 'timestamp'>,
+    orgId: string
+  ): HumanDecisionRecord {
+    const finalOrgId = orgId || decision.orgId || DEFAULT_ORG_ID;
+    const newDec: HumanDecisionRecord = {
+      id: `dec-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+      timestamp: new Date().toISOString(),
+      ...decision,
+      orgId: finalOrgId,
+    };
+    if (!this.data.humanDecisions) this.data.humanDecisions = [];
+    this.data.humanDecisions.unshift(newDec);
+    this.save();
+    return newDec;
+  }
+
+  public getHumanDecisions(candidateId: string, orgId: string): HumanDecisionRecord[] {
+    if (!this.data.humanDecisions) return [];
+    return this.data.humanDecisions.filter(d => d.candidateId === candidateId && d.orgId === orgId);
+  }
+
+  public getAllHumanDecisions(orgId: string): HumanDecisionRecord[] {
+    if (!this.data.humanDecisions) return [];
+    return this.data.humanDecisions.filter(d => d.orgId === orgId);
+  }
+
+  // --- Collaborative Review Assignments ---
+  public addReviewAssignment(
+    assignment: Omit<CandidateReviewAssignment, 'id' | 'assignedAt'>,
+    orgId: string
+  ): CandidateReviewAssignment {
+    const finalOrgId = orgId || assignment.orgId || DEFAULT_ORG_ID;
+    const newAssign: CandidateReviewAssignment = {
+      id: `assign-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+      assignedAt: new Date().toISOString(),
+      ...assignment,
+      orgId: finalOrgId,
+    };
+    if (!this.data.reviewAssignments) this.data.reviewAssignments = [];
+    this.data.reviewAssignments.unshift(newAssign);
+    this.save();
+    return newAssign;
+  }
+
+  public getReviewAssignments(
+    orgId: string,
+    options?: { candidateId?: string; assignedToUserId?: string; status?: string }
+  ): CandidateReviewAssignment[] {
+    if (!this.data.reviewAssignments) return [];
+    return this.data.reviewAssignments.filter(a => {
+      if (a.orgId !== orgId) return false;
+      if (options?.candidateId && a.candidateId !== options.candidateId) return false;
+      if (options?.assignedToUserId && a.assignedToUserId !== options.assignedToUserId) return false;
+      if (options?.status && a.status !== options.status) return false;
+      return true;
+    });
+  }
+
+  public updateReviewAssignment(
+    id: string,
+    updates: Partial<CandidateReviewAssignment>,
+    orgId: string
+  ): CandidateReviewAssignment | undefined {
+    if (!this.data.reviewAssignments) return undefined;
+    const idx = this.data.reviewAssignments.findIndex(a => a.id === id && a.orgId === orgId);
+    if (idx === -1) return undefined;
+
+    const existing = this.data.reviewAssignments[idx];
+    const updated: CandidateReviewAssignment = {
+      ...existing,
+      ...updates,
+      completedAt: updates.status === 'COMPLETED' ? new Date().toISOString() : existing.completedAt,
+    };
+    this.data.reviewAssignments[idx] = updated;
+    this.save();
+    return updated;
+  }
+
+  // --- Collaborative Notes & Comments ---
+  public addCollaborativeNote(
+    note: Omit<CandidateCollaborativeNote, 'id' | 'createdAt'>,
+    orgId: string
+  ): CandidateCollaborativeNote {
+    const finalOrgId = orgId || note.orgId || DEFAULT_ORG_ID;
+    const newNote: CandidateCollaborativeNote = {
+      id: `note-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+      createdAt: new Date().toISOString(),
+      ...note,
+      orgId: finalOrgId,
+    };
+    if (!this.data.collaborativeNotes) this.data.collaborativeNotes = [];
+    this.data.collaborativeNotes.unshift(newNote);
+    this.save();
+    return newNote;
+  }
+
+  public getCollaborativeNotes(candidateId: string, orgId: string): CandidateCollaborativeNote[] {
+    if (!this.data.collaborativeNotes) return [];
+    return this.data.collaborativeNotes.filter(n => n.candidateId === candidateId && n.orgId === orgId);
+  }
+
+  public deleteCollaborativeNote(noteId: string, orgId: string): boolean {
+    if (!this.data.collaborativeNotes) return false;
+    const initialLen = this.data.collaborativeNotes.length;
+    this.data.collaborativeNotes = this.data.collaborativeNotes.filter(n => !(n.id === noteId && n.orgId === orgId));
+    const deleted = this.data.collaborativeNotes.length < initialLen;
+    if (deleted) this.save();
+    return deleted;
+  }
+
+  // --- Job Hiring Policies with Versioning ---
+  public getJobHiringPolicy(jobId: string, orgId: string): JobHiringPolicy | undefined {
+    if (!this.data.hiringPolicies || !this.data.hiringPolicies[jobId]) {
+      // Return default template policy
+      return {
+        policyVersion: 1,
+        name: 'Default Enterprise Hiring Policy v1',
+        requiredSkillWeight: 40,
+        preferredSkillWeight: 15,
+        experienceWeight: 20,
+        evidenceWeight: 15,
+        projectsWeight: 10,
+        minExperienceYears: 3,
+        minEvidenceCoverage: 60,
+        mandatoryCertifications: [],
+        requiredInterviewRounds: 2,
+        allowAIAutoShortlist: false,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 'System Policy Engine',
+      };
+    }
+    const policies = this.data.hiringPolicies[jobId];
+    return policies[policies.length - 1]; // return latest version
+  }
+
+  public getJobHiringPolicyHistory(jobId: string, orgId: string): JobHiringPolicy[] {
+    if (!this.data.hiringPolicies || !this.data.hiringPolicies[jobId]) {
+      const defaultPol = this.getJobHiringPolicy(jobId, orgId);
+      return defaultPol ? [defaultPol] : [];
+    }
+    return this.data.hiringPolicies[jobId];
+  }
+
+  public saveJobHiringPolicy(
+    jobId: string,
+    policy: Omit<JobHiringPolicy, 'policyVersion' | 'updatedAt'>,
+    orgId: string,
+    updatedBy: string
+  ): JobHiringPolicy {
+    if (!this.data.hiringPolicies) this.data.hiringPolicies = {};
+    if (!this.data.hiringPolicies[jobId]) this.data.hiringPolicies[jobId] = [];
+
+    const history = this.data.hiringPolicies[jobId];
+    const nextVersion = history.length + 1;
+
+    const newPolicy: JobHiringPolicy = {
+      ...policy,
+      policyVersion: nextVersion,
+      updatedAt: new Date().toISOString(),
+      updatedBy: updatedBy || 'Authorized HR User',
+    };
+
+    history.push(newPolicy);
+    this.save();
+    return newPolicy;
+  }
+
+  // --- User Administration & Invitations ---
+  public createInvitation(
+    invitation: Omit<UserInvitation, 'id' | 'createdAt' | 'token' | 'status' | 'expiresAt'> & { expiresAt?: string }
+  ): UserInvitation {
+    const token = `inv-${crypto.randomBytes(16).toString('hex')}`;
+    const newInv: UserInvitation = {
+      id: `inv-id-${Date.now()}`,
+      token,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      expiresAt: invitation.expiresAt || new Date(Date.now() + 7 * 24 * 3600000).toISOString(), // 7 days
+      ...invitation,
+    };
+    if (!this.data.invitations) this.data.invitations = [];
+    this.data.invitations.unshift(newInv);
+    this.save();
+    return newInv;
+  }
+
+  public getInvitations(orgId: string): UserInvitation[] {
+    if (!this.data.invitations) return [];
+    return this.data.invitations.filter(i => i.orgId === orgId);
+  }
+
+  public getInvitationByToken(token: string): UserInvitation | undefined {
+    if (!this.data.invitations) return undefined;
+    return this.data.invitations.find(i => i.token === token && i.status === 'PENDING' && new Date(i.expiresAt) > new Date());
+  }
+
+  public acceptInvitation(token: string, passwordPlain: string): User | undefined {
+    const inv = this.getInvitationByToken(token);
+    if (!inv) return undefined;
+
+    inv.status = 'ACCEPTED';
+    const newUser = this.createUser({
+      email: inv.email,
+      name: inv.name,
+      role: inv.role,
+      orgId: inv.orgId,
+      passwordPlain,
+    });
+    this.save();
+    return newUser;
+  }
+
+  public deleteUser(userId: string, orgId: string): boolean {
+    const initialLen = this.data.users.length;
+    this.data.users = this.data.users.filter(u => !(u.id === userId && u.orgId === orgId));
+    const deleted = this.data.users.length < initialLen;
+    if (deleted) this.save();
+    return deleted;
+  }
+
+  public updateUserRole(userId: string, newRole: UserRole, orgId: string): User | undefined {
+    const user = this.data.users.find(u => u.id === userId && u.orgId === orgId);
+    if (!user) return undefined;
+    user.role = newRole;
+    this.save();
+    return user;
+  }
+
+  // --- Data Governance & Retention ---
+  public getGovernancePolicy(orgId: string): DataGovernancePolicy {
+    if (!this.data.governancePolicies || !this.data.governancePolicies[orgId]) {
+      return {
+        retentionPeriodDays: 365,
+        anonymizeOnDelete: true,
+        dataExportAllowed: true,
+        auditLogRetentionDays: 730,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    return this.data.governancePolicies[orgId];
+  }
+
+  public updateGovernancePolicy(orgId: string, updates: Partial<DataGovernancePolicy>): DataGovernancePolicy {
+    if (!this.data.governancePolicies) this.data.governancePolicies = {};
+    const existing = this.getGovernancePolicy(orgId);
+    const updated: DataGovernancePolicy = {
+      ...existing,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.data.governancePolicies[orgId] = updated;
+    this.save();
+    return updated;
+  }
+
+  public anonymizeCandidate(candidateId: string, orgId: string, actorName: string): Candidate | undefined {
+    const candidate = this.getCandidateById(candidateId, orgId);
+    if (!candidate) return undefined;
+
+    // GDPR / CCPA right-to-be-forgotten compliant anonymization
+    candidate.name = `Anonymized Candidate #${candidate.id.slice(-4)}`;
+    candidate.email = `redacted-${candidate.id.slice(-4)}@anonymized.talentintel.local`;
+    candidate.avatarUrl = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
+    candidate.location = 'Redacted';
+    candidate.summary = 'Personal identifying information anonymized in accordance with enterprise data retention policy.';
+    candidate.salaryExpectation = 'Redacted';
+    candidate.isArchived = true;
+    candidate.status = 'anonymized';
+
+    // Strip PII from experience & education while preserving anonymized skill/role telemetry
+    candidate.experiences = (candidate.experiences || []).map(e => ({
+      ...e,
+      company: `Company #${Math.floor(Math.random() * 900 + 100)}`,
+      location: 'Redacted',
+    }));
+
+    candidate.education = (candidate.education || []).map(ed => ({
+      ...ed,
+      institution: 'Higher Education Institution (Redacted)',
+    }));
+
+    if (candidate.externalSources) {
+      candidate.externalSources = candidate.externalSources.map(s => ({
+        ...s,
+        url: 'https://redacted-pii.talentintel.local',
+      }));
+    }
+
+    this.save();
+    return candidate;
+  }
 }
 
 export const db = new PersistentDatabase();
+

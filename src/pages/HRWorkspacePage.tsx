@@ -9,6 +9,9 @@ import { InterviewIntelligenceView } from '../components/InterviewIntelligenceVi
 import { EntityGraphView } from '../components/EntityGraphView';
 import { AgentOrchestratorView } from '../components/AgentOrchestratorView';
 import { DossierOverview } from '../components/DossierOverview';
+import { HumanVsAIAnalyticsView } from '../components/HumanVsAIAnalyticsView';
+import { EnterpriseGovernanceView } from '../components/EnterpriseGovernanceView';
+import { JobHiringPolicyModal } from '../components/JobHiringPolicyModal';
 import { 
   Users, 
   Search, 
@@ -28,7 +31,10 @@ import {
   ArrowRight,
   TrendingUp,
   Cpu,
-  Share2
+  Share2,
+  Scale,
+  Shield,
+  Sliders
 } from 'lucide-react';
 
 export type WorkspaceSubView = 
@@ -37,9 +43,10 @@ export type WorkspaceSubView =
   | 'comparison'
   | 'interviews'
   | 'evidence'
+  | 'graph'
+  | 'ai_alignment'
   | 'analytics'
-  | 'jobs'
-  | 'graph';
+  | 'governance';
 
 interface HRWorkspacePageProps {
   candidates: Candidate[];
@@ -80,6 +87,7 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showArchived, setShowArchived] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState<boolean>(false);
 
   const filteredCandidates = candidates.filter(c => {
     if (!c) return false;
@@ -115,6 +123,17 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
                 onJobDeleted={onJobDeleted}
                 onOpenUniverse={onOpenUniverse}
               />
+            )}
+
+            {selectedJob && (
+              <button
+                onClick={() => setIsPolicyModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950/80 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                title="Configure Requisition Hiring Policy & Stage Gates"
+              >
+                <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Hiring Policy</span>
+              </button>
             )}
 
             <div className="hidden lg:flex items-center gap-2 bg-slate-950/80 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
@@ -178,8 +197,10 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
             { id: 'comparison', label: 'Candidate Comparison', icon: Layers },
             { id: 'interviews', label: 'Interviews', icon: HelpCircle },
             { id: 'evidence', label: 'Evidence', icon: ShieldCheck },
-            { id: 'graph', label: 'Knowledge Graph', icon: Share2 },
+            { id: 'ai_alignment', label: 'Human-AI Alignment', icon: Scale },
             { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
+            { id: 'governance', label: 'Enterprise Governance', icon: Shield },
+            { id: 'graph', label: 'Knowledge Graph', icon: Share2 },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = subView === tab.id;
@@ -242,11 +263,13 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
                 <button
                   onClick={() => setShowArchived(!showArchived)}
                   className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                    showArchived ? 'bg-indigo-950 text-indigo-300 border border-indigo-700' : 'bg-slate-950 text-slate-400 border border-slate-800'
+                    showArchived
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   <Archive className="w-3.5 h-3.5" />
-                  <span>{showArchived ? 'Hide Archived' : 'Show Archived'}</span>
+                  <span>Archived</span>
                 </button>
               </div>
             </div>
@@ -393,6 +416,16 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
           </div>
         )}
 
+        {/* Human-AI Alignment Analytics Tab */}
+        {subView === 'ai_alignment' && (
+          <HumanVsAIAnalyticsView />
+        )}
+
+        {/* Enterprise Governance Tab */}
+        {subView === 'governance' && (
+          <EnterpriseGovernanceView currentUser={currentUser} />
+        )}
+
         {/* Knowledge Graph Tab */}
         {subView === 'graph' && topCandidate && (
           <div className="space-y-4">
@@ -424,6 +457,16 @@ export const HRWorkspacePage: React.FC<HRWorkspacePageProps> = ({
           />
         )}
       </main>
+
+      {/* Requisition Hiring Policy Modal */}
+      {isPolicyModalOpen && selectedJob && (
+        <JobHiringPolicyModal
+          isOpen={isPolicyModalOpen}
+          onClose={() => setIsPolicyModalOpen(false)}
+          job={selectedJob}
+          onPolicyUpdated={onRefreshData}
+        />
+      )}
     </div>
   );
 };

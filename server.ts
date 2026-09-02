@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { apiRouter } from './server/routes/api';
 import { generalApiRateLimiter } from './server/middleware/rateLimit';
+import { requestTracingMiddleware } from './server/services/observability';
 import { setupLiveVoiceServer } from './server/services/liveVoiceService';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -20,6 +21,9 @@ async function startServer() {
 
   // Disable server identification header
   app.disable('x-powered-by');
+
+  // Request Tracing & Structured Observability
+  app.use(requestTracingMiddleware);
 
   // Enterprise Security Headers
   app.use((req, res, next) => {

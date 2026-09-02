@@ -1020,6 +1020,30 @@
   ],
   "auditLogs": [
     {
+      "id": "audit-1788336857645-af040c",
+      "timestamp": "2026-09-02T08:14:17.645Z",
+      "userId": "user-admin-1",
+      "userEmail": "admin@talentintel.ai",
+      "userName": "Elena Rostova",
+      "orgId": "org-talentintel-enterprise",
+      "action": "USER_LOGIN",
+      "entityType": "auth",
+      "entityId": "user-admin-1",
+      "details": "User logged in successfully as [Admin]."
+    },
+    {
+      "id": "audit-1788336857593-9b574f",
+      "timestamp": "2026-09-02T08:14:17.593Z",
+      "userId": "user-admin-1",
+      "userEmail": "admin@talentintel.ai",
+      "userName": "Elena Rostova",
+      "orgId": "org-talentintel-enterprise",
+      "action": "USER_LOGIN",
+      "entityType": "auth",
+      "entityId": "user-admin-1",
+      "details": "User logged in successfully as [Admin]."
+    },
+    {
       "id": "audit-1788321020392-01edc7",
       "timestamp": "2026-09-02T03:50:20.392Z",
       "userId": "user-admin-1",
@@ -1186,6 +1210,465 @@
     }
   ],
   "interviewRecords": [
+    {
+      "id": "intv-1788339962456-8a0f47",
+      "createdAt": "2026-09-02T09:06:02.456Z",
+      "candidateId": "cand-e2e-test-01",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Alex Vance",
+      "interviewerRole": "Staff Architect",
+      "stage": "Technical Deep-Dive",
+      "date": "2026-08-28",
+      "scores": {
+        "Cluster Architecture": 96,
+        "Fault Tolerance": 92
+      },
+      "notes": "Candidate architected a resilient consensus system on whiteboard with zero hesitation.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788339962450-94e8e3",
+      "createdAt": "2026-09-02T09:06:02.450Z",
+      "candidateId": "cand-p6-interview-1788339962450",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Dr. Sarah Connor",
+      "interviewerRole": "Principal Architect",
+      "stage": "System Architecture",
+      "date": "2026-08-27",
+      "scores": {
+        "Distributed Systems": 95,
+        "Problem Solving": 90
+      },
+      "notes": "Candidate demonstrated deep mastery of Raft log compaction and network partition healing.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788339962436-0f6fe1",
+      "createdAt": "2026-09-02T09:06:02.436Z",
+      "candidateId": "cand-1",
+      "stage": "Technical Deep-Dive",
+      "interviewerId": "usr_admin_1",
+      "interviewerName": "Dr. Sarah Chen",
+      "interviewerRole": "Chief Architect",
+      "date": "2026-03-30",
+      "scores": {
+        "q-1": 5,
+        "q-2": 4
+      },
+      "notes": "Demonstrated exceptional understanding of distributed consensus protocols and lock-free data structures.",
+      "recommendation": "Strong Hire",
+      "orgId": "org-talentintel-enterprise"
+    },
+    {
+      "id": "intv-1788339834161-e1a1e1",
+      "createdAt": "2026-09-02T09:03:54.161Z",
+      "candidateId": "cand-e2e-test-01",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Alex Vance",
+      "interviewerRole": "Staff Architect",
+      "stage": "Technical Deep-Dive",
+      "date": "2026-08-28",
+      "scores": {
+        "Cluster Architecture": 96,
+        "Fault Tolerance": 92
+      },
+      "notes": "Candidate architected a resilient consensus system on whiteboard with zero hesitation.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788339834154-64ed95",
+      "createdAt": "2026-09-02T09:03:54.154Z",
+      "candidateId": "cand-p6-interview-1788339834154",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Dr. Sarah Connor",
+      "interviewerRole": "Principal Architect",
+      "stage": "System Architecture",
+      "date": "2026-08-27",
+      "scores": {
+        "Distributed Systems": 95,
+        "Problem Solving": 90
+      },
+      "notes": "Candidate demonstrated deep mastery of Raft log compaction and network partition healing.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788339834136-3f67ee",
+      "createdAt": "2026-09-02T09:03:54.136Z",
+      "candidateId": "cand-1",
+      "stage": "Technical Deep-Dive",
+      "interviewerId": "usr_admin_1",
+      "interviewerName": "Dr. Sarah Chen",
+      "interviewerRole": "Chief Architect",
+      "date": "2026-03-30",
+      "scores": {
+        "q-1": 5,
+        "q-2": 4
+      },
+      "notes": "Demonstrated exceptional understanding of distributed consensus protocols and lock-free data structures.",
+      "recommendation": "Strong Hire",
+      "orgId": "org-talentintel-enterprise"
+    },
+    {
+      "id": "intv-1788339811516-014970",
+      "createdAt": "2026-09-02T09:03:31.516Z",
+      "candidateId": "cand-e2e-test-01",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Alex Vance",
+      "interviewerRole": "Staff Architect",
+      "stage": "Technical Deep-Dive",
+      "date": "2026-08-28",
+      "scores": {
+        "Cluster Architecture": 96,
+        "Fault Tolerance": 92
+      },
+      "notes": "Candidate architected a resilient consensus system on whiteboard with zero hesitation.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788339811509-ab8631",
+      "createdAt": "2026-09-02T09:03:31.509Z",
+      "candidateId": "cand-p6-interview-1788339811509",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Dr. Sarah Connor",
+      "interviewerRole": "Principal Architect",
+      "stage": "System Architecture",
+      "date": "2026-08-27",
+      "scores": {
+        "Distributed Systems": 95,
+        "Problem Solving": 90
+      },
+      "notes": "Candidate demonstrated deep mastery of Raft log compaction and network partition healing.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788339811492-4e33a8",
+      "createdAt": "2026-09-02T09:03:31.492Z",
+      "candidateId": "cand-1",
+      "stage": "Technical Deep-Dive",
+      "interviewerId": "usr_admin_1",
+      "interviewerName": "Dr. Sarah Chen",
+      "interviewerRole": "Chief Architect",
+      "date": "2026-03-30",
+      "scores": {
+        "q-1": 5,
+        "q-2": 4
+      },
+      "notes": "Demonstrated exceptional understanding of distributed consensus protocols and lock-free data structures.",
+      "recommendation": "Strong Hire",
+      "orgId": "org-talentintel-enterprise"
+    },
+    {
+      "id": "intv-1788339646750-531a0e",
+      "createdAt": "2026-09-02T09:00:46.750Z",
+      "candidateId": "cand-e2e-test-01",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Alex Vance",
+      "interviewerRole": "Staff Architect",
+      "stage": "Technical Deep-Dive",
+      "date": "2026-08-28",
+      "scores": {
+        "Cluster Architecture": 96,
+        "Fault Tolerance": 92
+      },
+      "notes": "Candidate architected a resilient consensus system on whiteboard with zero hesitation.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788339646743-201977",
+      "createdAt": "2026-09-02T09:00:46.744Z",
+      "candidateId": "cand-p6-interview-1788339646743",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Dr. Sarah Connor",
+      "interviewerRole": "Principal Architect",
+      "stage": "System Architecture",
+      "date": "2026-08-27",
+      "scores": {
+        "Distributed Systems": 95,
+        "Problem Solving": 90
+      },
+      "notes": "Candidate demonstrated deep mastery of Raft log compaction and network partition healing.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788339646726-e93798",
+      "createdAt": "2026-09-02T09:00:46.727Z",
+      "candidateId": "cand-1",
+      "stage": "Technical Deep-Dive",
+      "interviewerId": "usr_admin_1",
+      "interviewerName": "Dr. Sarah Chen",
+      "interviewerRole": "Chief Architect",
+      "date": "2026-03-30",
+      "scores": {
+        "q-1": 5,
+        "q-2": 4
+      },
+      "notes": "Demonstrated exceptional understanding of distributed consensus protocols and lock-free data structures.",
+      "recommendation": "Strong Hire",
+      "orgId": "org-talentintel-enterprise"
+    },
+    {
+      "id": "intv-1788338425498-a78578",
+      "createdAt": "2026-09-02T08:40:25.498Z",
+      "candidateId": "cand-e2e-test-01",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Alex Vance",
+      "interviewerRole": "Staff Architect",
+      "stage": "Technical Deep-Dive",
+      "date": "2026-08-28",
+      "scores": {
+        "Cluster Architecture": 96,
+        "Fault Tolerance": 92
+      },
+      "notes": "Candidate architected a resilient consensus system on whiteboard with zero hesitation.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788338425492-104623",
+      "createdAt": "2026-09-02T08:40:25.492Z",
+      "candidateId": "cand-p6-interview-1788338425492",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Dr. Sarah Connor",
+      "interviewerRole": "Principal Architect",
+      "stage": "System Architecture",
+      "date": "2026-08-27",
+      "scores": {
+        "Distributed Systems": 95,
+        "Problem Solving": 90
+      },
+      "notes": "Candidate demonstrated deep mastery of Raft log compaction and network partition healing.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788338425477-4e2116",
+      "createdAt": "2026-09-02T08:40:25.477Z",
+      "candidateId": "cand-1",
+      "stage": "Technical Deep-Dive",
+      "interviewerId": "usr_admin_1",
+      "interviewerName": "Dr. Sarah Chen",
+      "interviewerRole": "Chief Architect",
+      "date": "2026-03-30",
+      "scores": {
+        "q-1": 5,
+        "q-2": 4
+      },
+      "notes": "Demonstrated exceptional understanding of distributed consensus protocols and lock-free data structures.",
+      "recommendation": "Strong Hire",
+      "orgId": "org-talentintel-enterprise"
+    },
+    {
+      "id": "intv-1788338172182-40b9d3",
+      "createdAt": "2026-09-02T08:36:12.182Z",
+      "candidateId": "cand-e2e-test-01",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Alex Vance",
+      "interviewerRole": "Staff Architect",
+      "stage": "Technical Deep-Dive",
+      "date": "2026-08-28",
+      "scores": {
+        "Cluster Architecture": 96,
+        "Fault Tolerance": 92
+      },
+      "notes": "Candidate architected a resilient consensus system on whiteboard with zero hesitation.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788338172176-6633a6",
+      "createdAt": "2026-09-02T08:36:12.176Z",
+      "candidateId": "cand-p6-interview-1788338172176",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Dr. Sarah Connor",
+      "interviewerRole": "Principal Architect",
+      "stage": "System Architecture",
+      "date": "2026-08-27",
+      "scores": {
+        "Distributed Systems": 95,
+        "Problem Solving": 90
+      },
+      "notes": "Candidate demonstrated deep mastery of Raft log compaction and network partition healing.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788338172157-c0180f",
+      "createdAt": "2026-09-02T08:36:12.157Z",
+      "candidateId": "cand-1",
+      "stage": "Technical Deep-Dive",
+      "interviewerId": "usr_admin_1",
+      "interviewerName": "Dr. Sarah Chen",
+      "interviewerRole": "Chief Architect",
+      "date": "2026-03-30",
+      "scores": {
+        "q-1": 5,
+        "q-2": 4
+      },
+      "notes": "Demonstrated exceptional understanding of distributed consensus protocols and lock-free data structures.",
+      "recommendation": "Strong Hire",
+      "orgId": "org-talentintel-enterprise"
+    },
+    {
+      "id": "intv-1788338097075-57caa7",
+      "createdAt": "2026-09-02T08:34:57.075Z",
+      "candidateId": "cand-e2e-test-01",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Alex Vance",
+      "interviewerRole": "Staff Architect",
+      "stage": "Technical Deep-Dive",
+      "date": "2026-08-28",
+      "scores": {
+        "Cluster Architecture": 96,
+        "Fault Tolerance": 92
+      },
+      "notes": "Candidate architected a resilient consensus system on whiteboard with zero hesitation.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788338097069-73bde6",
+      "createdAt": "2026-09-02T08:34:57.069Z",
+      "candidateId": "cand-p6-interview-1788338097069",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Dr. Sarah Connor",
+      "interviewerRole": "Principal Architect",
+      "stage": "System Architecture",
+      "date": "2026-08-27",
+      "scores": {
+        "Distributed Systems": 95,
+        "Problem Solving": 90
+      },
+      "notes": "Candidate demonstrated deep mastery of Raft log compaction and network partition healing.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788338097055-c8f1af",
+      "createdAt": "2026-09-02T08:34:57.055Z",
+      "candidateId": "cand-1",
+      "stage": "Technical Deep-Dive",
+      "interviewerId": "usr_admin_1",
+      "interviewerName": "Dr. Sarah Chen",
+      "interviewerRole": "Chief Architect",
+      "date": "2026-03-30",
+      "scores": {
+        "q-1": 5,
+        "q-2": 4
+      },
+      "notes": "Demonstrated exceptional understanding of distributed consensus protocols and lock-free data structures.",
+      "recommendation": "Strong Hire",
+      "orgId": "org-talentintel-enterprise"
+    },
+    {
+      "id": "intv-1788338075793-644b6b",
+      "createdAt": "2026-09-02T08:34:35.793Z",
+      "candidateId": "cand-e2e-test-01",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Alex Vance",
+      "interviewerRole": "Staff Architect",
+      "stage": "Technical Deep-Dive",
+      "date": "2026-08-28",
+      "scores": {
+        "Cluster Architecture": 96,
+        "Fault Tolerance": 92
+      },
+      "notes": "Candidate architected a resilient consensus system on whiteboard with zero hesitation.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788338075786-4fc9b9",
+      "createdAt": "2026-09-02T08:34:35.786Z",
+      "candidateId": "cand-p6-interview-1788338075786",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Dr. Sarah Connor",
+      "interviewerRole": "Principal Architect",
+      "stage": "System Architecture",
+      "date": "2026-08-27",
+      "scores": {
+        "Distributed Systems": 95,
+        "Problem Solving": 90
+      },
+      "notes": "Candidate demonstrated deep mastery of Raft log compaction and network partition healing.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788338075772-9fe68a",
+      "createdAt": "2026-09-02T08:34:35.772Z",
+      "candidateId": "cand-1",
+      "stage": "Technical Deep-Dive",
+      "interviewerId": "usr_admin_1",
+      "interviewerName": "Dr. Sarah Chen",
+      "interviewerRole": "Chief Architect",
+      "date": "2026-03-30",
+      "scores": {
+        "q-1": 5,
+        "q-2": 4
+      },
+      "notes": "Demonstrated exceptional understanding of distributed consensus protocols and lock-free data structures.",
+      "recommendation": "Strong Hire",
+      "orgId": "org-talentintel-enterprise"
+    },
+    {
+      "id": "intv-1788337110114-a4a1fe",
+      "createdAt": "2026-09-02T08:18:30.114Z",
+      "candidateId": "cand-e2e-test-01",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Alex Vance",
+      "interviewerRole": "Staff Architect",
+      "stage": "Technical Deep-Dive",
+      "date": "2026-08-28",
+      "scores": {
+        "Cluster Architecture": 96,
+        "Fault Tolerance": 92
+      },
+      "notes": "Candidate architected a resilient consensus system on whiteboard with zero hesitation.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788337110108-e396db",
+      "createdAt": "2026-09-02T08:18:30.108Z",
+      "candidateId": "cand-p6-interview-1788337110108",
+      "interviewerId": "user-interviewer-1",
+      "interviewerName": "Dr. Sarah Connor",
+      "interviewerRole": "Principal Architect",
+      "stage": "System Architecture",
+      "date": "2026-08-27",
+      "scores": {
+        "Distributed Systems": 95,
+        "Problem Solving": 90
+      },
+      "notes": "Candidate demonstrated deep mastery of Raft log compaction and network partition healing.",
+      "recommendation": "Strong Hire",
+      "orgId": "org_phase6_test_tenant"
+    },
+    {
+      "id": "intv-1788337110085-8e3576",
+      "createdAt": "2026-09-02T08:18:30.085Z",
+      "candidateId": "cand-1",
+      "stage": "Technical Deep-Dive",
+      "interviewerId": "usr_admin_1",
+      "interviewerName": "Dr. Sarah Chen",
+      "interviewerRole": "Chief Architect",
+      "date": "2026-03-30",
+      "scores": {
+        "q-1": 5,
+        "q-2": 4
+      },
+      "notes": "Demonstrated exceptional understanding of distributed consensus protocols and lock-free data structures.",
+      "recommendation": "Strong Hire",
+      "orgId": "org-talentintel-enterprise"
+    },
     {
       "id": "intv-1788321096875-62d230",
       "createdAt": "2026-09-02T03:51:36.875Z",
@@ -2510,5 +2993,11 @@
       "notes": "Strong knowledge of distributed transactions.",
       "recommendation": "Strong Hire"
     }
-  ]
+  ],
+  "humanDecisions": [],
+  "reviewAssignments": [],
+  "collaborativeNotes": [],
+  "hiringPolicies": {},
+  "invitations": [],
+  "governancePolicies": {}
 }
